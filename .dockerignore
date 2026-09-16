@@ -1,0 +1,14 @@
+.git
+.gitignore
+.env
+.venv
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/node_modules
+**/dist
+*.log
+.skills/a_frontend_skills
+a_data/a_input
+a_data/b_output
+f_docs

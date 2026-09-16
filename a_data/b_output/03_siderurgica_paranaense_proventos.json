@@ -1,0 +1,508 @@
+{
+  "schema_version": "1.0",
+  "document_id": "sha256:a21a294ac3ededbb6fdef195be0edb0572069544e0b73f6fc1918fa77d6b0e85",
+  "source_document": {
+    "file_name": "03_siderurgica_paranaense_proventos.pdf",
+    "sha256": "a21a294ac3ededbb6fdef195be0edb0572069544e0b73f6fc1918fa77d6b0e85",
+    "page_count": 1,
+    "extraction_methods": [
+      "NATIVE_TEXT"
+    ]
+  },
+  "processing_status": "ACCEPTED",
+  "issuer": {
+    "name": {
+      "value": "COMPANHIA SIDERÚRGICA PARANAENSE S.A.",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": "HIGH",
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "COMPANHIA SIDERÚRGICA PARANAENSE S.A.",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "REF_ISSUER_MATCH",
+          "status": "PASS",
+          "message": "issuer matches the reference record.",
+          "expected": null,
+          "observed": null
+        }
+      ]
+    },
+    "cnpj": {
+      "value": "76.543.210/0001-12",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": "HIGH",
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "76.543.210/0001-12",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "REF_CNPJ_MATCH",
+          "status": "PASS",
+          "message": "cnpj matches the reference record.",
+          "expected": null,
+          "observed": null
+        }
+      ]
+    }
+  },
+  "security": {
+    "isin": {
+      "value": "BRCSPRACNOR1",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": "HIGH",
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "BRCSPRACNOR1",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "REF_ISIN_MATCH",
+          "status": "PASS",
+          "message": "isin matches the reference record.",
+          "expected": null,
+          "observed": null
+        }
+      ]
+    },
+    "ticker": {
+      "value": "CSPR3",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": "HIGH",
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "CSPR3",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "REF_TICKER_MATCH",
+          "status": "PASS",
+          "message": "ticker matches the reference record.",
+          "expected": null,
+          "observed": null
+        }
+      ]
+    },
+    "share_class": {
+      "value": "ON",
+      "status": "REFERENCE_ENRICHED",
+      "origin": "REFERENCE",
+      "confidence": "HIGH",
+      "sources": [],
+      "validation": []
+    },
+    "listing_segment": {
+      "value": "Novo Mercado",
+      "status": "REFERENCE_ENRICHED",
+      "origin": "REFERENCE",
+      "confidence": "HIGH",
+      "sources": [],
+      "validation": []
+    },
+    "asset_status": {
+      "value": "ativo",
+      "status": "REFERENCE_ENRICHED",
+      "origin": "REFERENCE",
+      "confidence": "HIGH",
+      "sources": [],
+      "validation": []
+    }
+  },
+  "corporate_action": {
+    "event_type": {
+      "value": "JCP",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": "HIGH",
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "remuneração do capital próprio",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "EVENT_CLASSIFICATION_SUPPORTED",
+          "status": "PASS",
+          "message": "No material classification conflict was reported.",
+          "expected": "JCP",
+          "observed": "JCP"
+        }
+      ]
+    },
+    "classification_evidence": [
+      {
+        "supports": "JCP",
+        "rationale": "Termo econômico explícito identificado pelo extrator Python.",
+        "source": {
+          "page": 1,
+          "evidence": "remuneração do capital próprio",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      }
+    ],
+    "classification_conflicts": [],
+    "dates": {
+      "approval_date": {
+        "value": "2026-06-05",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": "HIGH",
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "reunião de 05 de junho de 2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "DATE_APPROVAL_AFTER_RECORD",
+            "status": "PASS",
+            "message": "Approval date is not after the record date.",
+            "expected": "approval_date <= record_date",
+            "observed": "2026-06-05 > 2026-06-19"
+          }
+        ]
+      },
+      "record_date": {
+        "value": "2026-06-19",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": "HIGH",
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "Data-base (“data com”)\n19/06/2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "DATE_APPROVAL_AFTER_RECORD",
+            "status": "PASS",
+            "message": "Approval date is not after the record date.",
+            "expected": "approval_date <= record_date",
+            "observed": "2026-06-05 > 2026-06-19"
+          },
+          {
+            "rule": "DATE_RECORD_NOT_BEFORE_EX",
+            "status": "PASS",
+            "message": "Record date occurs before the ex-date.",
+            "expected": "record_date < ex_date",
+            "observed": "2026-06-19 / 2026-06-22"
+          },
+          {
+            "rule": "DATE_PAYMENT_BEFORE_RECORD",
+            "status": "PASS",
+            "message": "Payment date is not before the record date.",
+            "expected": "payment_date >= record_date",
+            "observed": "2026-09-11 / 2026-06-19"
+          }
+        ]
+      },
+      "ex_date": {
+        "value": "2026-06-22",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": "HIGH",
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "Data “ex”\n22/06/2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "DATE_RECORD_NOT_BEFORE_EX",
+            "status": "PASS",
+            "message": "Record date occurs before the ex-date.",
+            "expected": "record_date < ex_date",
+            "observed": "2026-06-19 / 2026-06-22"
+          }
+        ]
+      },
+      "payment_date": {
+        "value": "2026-09-11",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": "HIGH",
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "Data de pagamento\n11/09/2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "DATE_PAYMENT_BEFORE_RECORD",
+            "status": "PASS",
+            "message": "Payment date is not before the record date.",
+            "expected": "payment_date >= record_date",
+            "observed": "2026-09-11 / 2026-06-19"
+          }
+        ]
+      },
+      "credit_date": {
+        "value": null,
+        "status": "UNKNOWN",
+        "origin": "UNKNOWN",
+        "confidence": "LOW",
+        "sources": [],
+        "validation": []
+      },
+      "fraction_period_start": {
+        "value": null,
+        "status": "UNKNOWN",
+        "origin": "UNKNOWN",
+        "confidence": "LOW",
+        "sources": [],
+        "validation": []
+      },
+      "fraction_period_end": {
+        "value": null,
+        "status": "UNKNOWN",
+        "origin": "UNKNOWN",
+        "confidence": "LOW",
+        "sources": [],
+        "validation": []
+      }
+    },
+    "financials": {
+      "gross_amount_per_share": {
+        "value": "0.0921500000",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": "HIGH",
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "Valor bruto por ação ON\nR$ 0,0921500000",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "FIN_GROSS_NET_TAX_CONSISTENT",
+            "status": "PASS",
+            "message": "Gross, tax rate, and net amount are mathematically consistent.",
+            "expected": "0.0760237500000",
+            "observed": "0.0760237500"
+          }
+        ]
+      },
+      "net_amount_per_share": {
+        "value": "0.0760237500",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": "HIGH",
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "Valor líquido por ação ON\nR$ 0,0760237500",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "FIN_GROSS_NET_TAX_CONSISTENT",
+            "status": "PASS",
+            "message": "Gross, tax rate, and net amount are mathematically consistent.",
+            "expected": "0.0760237500000",
+            "observed": "0.0760237500"
+          }
+        ]
+      },
+      "tax_rate_percent": {
+        "value": "17.5",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": "HIGH",
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "Imposto de Renda Retido na\nFonte\n17,5%",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "FIN_GROSS_NET_TAX_CONSISTENT",
+            "status": "PASS",
+            "message": "Gross, tax rate, and net amount are mathematically consistent.",
+            "expected": "0.0760237500000",
+            "observed": "0.0760237500"
+          }
+        ]
+      },
+      "tax_treatment": {
+        "value": "TAX_RULE_UNIFORM",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": "HIGH",
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "retenção de Imposto de Renda na Fonte à alíquota de 17,5% no",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": []
+      },
+      "currency": {
+        "value": "BRL",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": "HIGH",
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "Valor bruto por ação ON\nR$ 0,0921500000",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": []
+      },
+      "ratio": {
+        "value": null,
+        "status": "UNKNOWN",
+        "origin": "UNKNOWN",
+        "confidence": "LOW",
+        "sources": [],
+        "validation": []
+      },
+      "attributed_cost_per_share": {
+        "value": null,
+        "status": "UNKNOWN",
+        "origin": "UNKNOWN",
+        "confidence": "LOW",
+        "sources": [],
+        "validation": []
+      }
+    }
+  },
+  "extraction_attempts": [
+    {
+      "strategy": "PYTHON",
+      "outcome": "SUFFICIENT",
+      "model": null,
+      "unresolved_fields": [],
+      "error": null
+    }
+  ],
+  "reference_validation": {
+    "exact_match": true,
+    "matched_by": [
+      "issuer",
+      "cnpj",
+      "isin",
+      "ticker"
+    ],
+    "reference_record": {
+      "issuer": "Companhia Siderúrgica Paranaense S.A.",
+      "cnpj": "76.543.210/0001-12",
+      "isin": "BRCSPRACNOR1",
+      "ticker": "CSPR3",
+      "share_class": "ON",
+      "listing_segment": "Novo Mercado",
+      "status": "ativo"
+    },
+    "conflicts": [],
+    "possible_matches": []
+  },
+  "validations": [
+    {
+      "rule": "REF_ISSUER_MATCH",
+      "status": "PASS",
+      "message": "issuer matches the reference record.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "REF_CNPJ_MATCH",
+      "status": "PASS",
+      "message": "cnpj matches the reference record.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "REF_ISIN_MATCH",
+      "status": "PASS",
+      "message": "isin matches the reference record.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "REF_TICKER_MATCH",
+      "status": "PASS",
+      "message": "ticker matches the reference record.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "DATE_APPROVAL_AFTER_RECORD",
+      "status": "PASS",
+      "message": "Approval date is not after the record date.",
+      "expected": "approval_date <= record_date",
+      "observed": "2026-06-05 > 2026-06-19"
+    },
+    {
+      "rule": "DATE_RECORD_NOT_BEFORE_EX",
+      "status": "PASS",
+      "message": "Record date occurs before the ex-date.",
+      "expected": "record_date < ex_date",
+      "observed": "2026-06-19 / 2026-06-22"
+    },
+    {
+      "rule": "DATE_PAYMENT_BEFORE_RECORD",
+      "status": "PASS",
+      "message": "Payment date is not before the record date.",
+      "expected": "payment_date >= record_date",
+      "observed": "2026-09-11 / 2026-06-19"
+    },
+    {
+      "rule": "FIN_GROSS_NET_TAX_CONSISTENT",
+      "status": "PASS",
+      "message": "Gross, tax rate, and net amount are mathematically consistent.",
+      "expected": "0.0760237500000",
+      "observed": "0.0760237500"
+    },
+    {
+      "rule": "EVENT_CLASSIFICATION_SUPPORTED",
+      "status": "PASS",
+      "message": "No material classification conflict was reported.",
+      "expected": "JCP",
+      "observed": "JCP"
+    }
+  ],
+  "review": {
+    "required": false,
+    "reasons": []
+  },
+  "follow_up": {
+    "required": false,
+    "reasons": []
+  },
+  "exceptions": []
+}

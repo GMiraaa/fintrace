@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "pdf-extraction": {
+      "source": "claude-office-skills/skills",
+      "sourceType": "github",
+      "skillPath": "pdf-extraction/SKILL.md",
+      "computedHash": "b747452a0366e63d69743af86c0abf3da7e3f84a65f57bad2c61a1c0a44c0e14"
+    }
+  }
+}

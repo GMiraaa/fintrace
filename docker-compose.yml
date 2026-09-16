@@ -1,0 +1,54 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: c_backend/Dockerfile
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: 8000
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      INPUT_DIR: /app/a_data/a_input
+      OUTPUT_DIR: /app/a_data/b_output
+      GOLDEN_RECORDS_PATH: /app/a_data/c_golden_records/golden_records.csv
+      MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-20}
+      OCR_LANGUAGE: ${OCR_LANGUAGE:-por}
+      OCR_DPI: ${OCR_DPI:-300}
+      NATIVE_TEXT_MIN_CHARS: ${NATIVE_TEXT_MIN_CHARS:-80}
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      LLM_BASIC_MODEL: ${LLM_BASIC_MODEL:-gemini-3.5-flash-lite}
+      LLM_STRONG_MODEL: ${LLM_STRONG_MODEL:-gemini-3.8-flash}
+      ENABLE_BASIC_LLM_FALLBACK: ${ENABLE_BASIC_LLM_FALLBACK:-true}
+      ENABLE_STRONG_LLM_FALLBACK: ${ENABLE_STRONG_LLM_FALLBACK:-true}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ./a_data/a_input:/app/a_data/a_input
+      - ./a_data/b_output:/app/a_data/b_output
+      - ./a_data/c_golden_records:/app/a_data/c_golden_records:ro
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: b_frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: ""
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    restart: unless-stopped

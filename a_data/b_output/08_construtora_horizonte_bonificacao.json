@@ -1,0 +1,409 @@
+{
+  "schema_version": "1.0",
+  "document_id": "sha256:a509637f4b258454309e1d21e81beca56701a78624b8a6a6f9a6b0ec9389b0e5",
+  "source_document": {
+    "file_name": "08_construtora_horizonte_bonificacao.pdf",
+    "sha256": "a509637f4b258454309e1d21e81beca56701a78624b8a6a6f9a6b0ec9389b0e5",
+    "page_count": 1,
+    "extraction_methods": [
+      "NATIVE_TEXT"
+    ]
+  },
+  "processing_status": "REVIEW_REQUIRED",
+  "issuer": {
+    "name": {
+      "value": "CONSTRUTORA HORIZONTE S.A.",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": "HIGH",
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "CONSTRUTORA HORIZONTE S.A.",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": []
+    },
+    "cnpj": {
+      "value": "09.888.999/0001-21",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": "HIGH",
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "09.888.999/0001-21",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": []
+    }
+  },
+  "security": {
+    "isin": {
+      "value": "BRCNHZACNOR5",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": "HIGH",
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "BRCNHZACNOR5",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": []
+    },
+    "ticker": {
+      "value": "CNHZ3",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": "HIGH",
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "CNHZ3",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": []
+    },
+    "share_class": {
+      "value": null,
+      "status": "UNKNOWN",
+      "origin": "UNKNOWN",
+      "confidence": "LOW",
+      "sources": [],
+      "validation": []
+    },
+    "listing_segment": {
+      "value": null,
+      "status": "UNKNOWN",
+      "origin": "UNKNOWN",
+      "confidence": "LOW",
+      "sources": [],
+      "validation": []
+    },
+    "asset_status": {
+      "value": null,
+      "status": "UNKNOWN",
+      "origin": "UNKNOWN",
+      "confidence": "LOW",
+      "sources": [],
+      "validation": []
+    }
+  },
+  "corporate_action": {
+    "event_type": {
+      "value": "BONUS_SHARES",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": "HIGH",
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "Bonificação em Ações",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "EVENT_CLASSIFICATION_SUPPORTED",
+          "status": "PASS",
+          "message": "No material classification conflict was reported.",
+          "expected": "BONUS_SHARES",
+          "observed": "BONUS_SHARES"
+        }
+      ]
+    },
+    "classification_evidence": [
+      {
+        "supports": "BONUS_SHARES",
+        "rationale": "Termo econômico explícito identificado pelo extrator Python.",
+        "source": {
+          "page": 1,
+          "evidence": "Bonificação em Ações",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      }
+    ],
+    "classification_conflicts": [],
+    "dates": {
+      "approval_date": {
+        "value": "2026-06-04",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": "HIGH",
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "Assembleia Geral Extraordinária de\n04 de junho de 2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "DATE_APPROVAL_AFTER_RECORD",
+            "status": "PASS",
+            "message": "Approval date is not after the record date.",
+            "expected": "approval_date <= record_date",
+            "observed": "2026-06-04 > 2026-06-18"
+          }
+        ]
+      },
+      "record_date": {
+        "value": "2026-06-18",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": "HIGH",
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "Data-base (“data com”)\n18/06/2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "DATE_APPROVAL_AFTER_RECORD",
+            "status": "PASS",
+            "message": "Approval date is not after the record date.",
+            "expected": "approval_date <= record_date",
+            "observed": "2026-06-04 > 2026-06-18"
+          },
+          {
+            "rule": "DATE_RECORD_NOT_BEFORE_EX",
+            "status": "PASS",
+            "message": "Record date occurs before the ex-date.",
+            "expected": "record_date < ex_date",
+            "observed": "2026-06-18 / 2026-06-19"
+          }
+        ]
+      },
+      "ex_date": {
+        "value": "2026-06-19",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": "HIGH",
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "Data “ex-bonificação”\n19/06/2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "DATE_RECORD_NOT_BEFORE_EX",
+            "status": "PASS",
+            "message": "Record date occurs before the ex-date.",
+            "expected": "record_date < ex_date",
+            "observed": "2026-06-18 / 2026-06-19"
+          }
+        ]
+      },
+      "payment_date": {
+        "value": null,
+        "status": "UNKNOWN",
+        "origin": "UNKNOWN",
+        "confidence": "LOW",
+        "sources": [],
+        "validation": []
+      },
+      "credit_date": {
+        "value": "2026-06-26",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": "HIGH",
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "Crédito das ações bonificadas\n26/06/2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": []
+      },
+      "fraction_period_start": {
+        "value": null,
+        "status": "UNKNOWN",
+        "origin": "UNKNOWN",
+        "confidence": "LOW",
+        "sources": [],
+        "validation": []
+      },
+      "fraction_period_end": {
+        "value": null,
+        "status": "UNKNOWN",
+        "origin": "UNKNOWN",
+        "confidence": "LOW",
+        "sources": [],
+        "validation": []
+      }
+    },
+    "financials": {
+      "gross_amount_per_share": {
+        "value": null,
+        "status": "UNKNOWN",
+        "origin": "UNKNOWN",
+        "confidence": "LOW",
+        "sources": [],
+        "validation": []
+      },
+      "net_amount_per_share": {
+        "value": null,
+        "status": "UNKNOWN",
+        "origin": "UNKNOWN",
+        "confidence": "LOW",
+        "sources": [],
+        "validation": []
+      },
+      "tax_rate_percent": {
+        "value": null,
+        "status": "UNKNOWN",
+        "origin": "UNKNOWN",
+        "confidence": "LOW",
+        "sources": [],
+        "validation": []
+      },
+      "tax_treatment": {
+        "value": null,
+        "status": "UNKNOWN",
+        "origin": "UNKNOWN",
+        "confidence": "LOW",
+        "sources": [],
+        "validation": []
+      },
+      "currency": {
+        "value": "BRL",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": "HIGH",
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "Custo atribuído (base fiscal)\nR$ 7,820000",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": []
+      },
+      "ratio": {
+        "value": {
+          "kind": "NEW_PER_EXISTING",
+          "numerator": "1",
+          "denominator": "20",
+          "percentage": "5"
+        },
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": "HIGH",
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "Proporção\n1 ação nova para cada 20 ações (5%)",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "FIN_RATIO_VALID",
+            "status": "PASS",
+            "message": "Corporate action ratio is positive.",
+            "expected": "numerator > 0 and denominator > 0",
+            "observed": "1:20 (NEW_PER_EXISTING)"
+          }
+        ]
+      },
+      "attributed_cost_per_share": {
+        "value": "7.820000",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": "HIGH",
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "Custo atribuído (base fiscal)\nR$ 7,820000",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": []
+      }
+    }
+  },
+  "extraction_attempts": [
+    {
+      "strategy": "PYTHON",
+      "outcome": "SUFFICIENT",
+      "model": null,
+      "unresolved_fields": [],
+      "error": null
+    }
+  ],
+  "reference_validation": {
+    "exact_match": false,
+    "matched_by": [],
+    "reference_record": null,
+    "conflicts": [],
+    "possible_matches": []
+  },
+  "validations": [
+    {
+      "rule": "REF_NO_MATCH",
+      "status": "FAIL",
+      "message": "No reference record could be confirmed.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "DATE_APPROVAL_AFTER_RECORD",
+      "status": "PASS",
+      "message": "Approval date is not after the record date.",
+      "expected": "approval_date <= record_date",
+      "observed": "2026-06-04 > 2026-06-18"
+    },
+    {
+      "rule": "DATE_RECORD_NOT_BEFORE_EX",
+      "status": "PASS",
+      "message": "Record date occurs before the ex-date.",
+      "expected": "record_date < ex_date",
+      "observed": "2026-06-18 / 2026-06-19"
+    },
+    {
+      "rule": "FIN_RATIO_VALID",
+      "status": "PASS",
+      "message": "Corporate action ratio is positive.",
+      "expected": "numerator > 0 and denominator > 0",
+      "observed": "1:20 (NEW_PER_EXISTING)"
+    },
+    {
+      "rule": "EVENT_CLASSIFICATION_SUPPORTED",
+      "status": "PASS",
+      "message": "No material classification conflict was reported.",
+      "expected": "BONUS_SHARES",
+      "observed": "BONUS_SHARES"
+    }
+  ],
+  "review": {
+    "required": true,
+    "reasons": [
+      {
+        "code": "REFERENCE_NOT_FOUND",
+        "category": "VALIDATION_EXCEPTION",
+        "message": "No golden record could be confirmed for the extracted security."
+      }
+    ]
+  },
+  "follow_up": {
+    "required": false,
+    "reasons": []
+  },
+  "exceptions": [
+    {
+      "code": "REFERENCE_NOT_FOUND",
+      "category": "VALIDATION_EXCEPTION",
+      "message": "No golden record could be confirmed for the extracted security."
+    }
+  ]
+}

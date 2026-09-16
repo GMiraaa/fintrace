@@ -1,0 +1,68 @@
+# Ambiente e segredos
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.eggs/
+build/
+site/
+.pytest_cache/
+.hypothesis/
+.mypy_cache/
+.ruff_cache/
+.pyright/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.venv/
+venv/
+
+# JavaScript
+node_modules/
+dist/
+.vite/
+.parcel-cache/
+.turbo/
+.eslintcache
+coverage/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editores e sistemas operacionais
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.fleet/
+.history/
+*.swp
+*.swo
+*~
+*.orig
+*.rej
+
+# Artefatos de execução
+*.log
+*.tmp
+a_data/a_input/uploads/
+a_data/a_input/*.uploading
+a_data/b_output/*.json.tmp
+
+# Em saída, versiona somente os JSONs entregáveis do case.
+a_data/b_output/*
+!a_data/b_output/.gitkeep
+!a_data/b_output/*.json
+
+# Não versiona os arquivos inputados
+a_data/a_input/
