@@ -8,17 +8,17 @@ export function UploadPanel({ error, files, onAddFiles, onProcess, onRemoveFile,
 
   return (
     <div className="intro-panel">
-      <p className="section-context">Asset Servicing · Controle de eventos</p>
-      <h1 id="page-title">Documentos convertidos em decisões auditáveis.</h1>
+      <p className="section-context">Nova análise</p>
+      <h1 id="page-title">Analise avisos de eventos corporativos</h1>
       <p className="intro-copy">
-        Processe avisos corporativos, valide identificadores e regras financeiras e
-        concentre a atuação do operador apenas nas exceções materiais.
+        Envie um ou mais PDFs. O FinTrace extrai os dados, confere o ativo e
+        destaca somente o que precisa da sua atenção.
       </p>
       <div className="drop-zone" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); onAddFiles(event.dataTransfer.files) }}>
         <input ref={inputRef} accept="application/pdf,.pdf" id="pdf-input" multiple onChange={(event) => onAddFiles(event.target.files)} type="file" />
         <Icon name="upload" size={24} />
-        <div><strong>Arraste os avisos para esta área</strong><span>ou escolha PDFs no seu computador</span></div>
-        <button className="text-button" onClick={() => inputRef.current?.click()} type="button">Escolher arquivos</button>
+        <div><strong>Solte os arquivos PDF aqui</strong><span>Até 20 MB por documento</span></div>
+        <button className="text-button" onClick={() => inputRef.current?.click()} type="button">Selecionar PDFs</button>
       </div>
       {files.length > 0 && (
         <div className="file-queue" aria-label="Arquivos selecionados">
@@ -32,7 +32,7 @@ export function UploadPanel({ error, files, onAddFiles, onProcess, onRemoveFile,
         </div>
       )}
       <button className="primary-action" disabled={!files.length || state === 'processing'} onClick={onProcess} type="button">
-        {state === 'processing' ? <><span className="spinner" />Processando documentos</> : 'Processar documentos'}
+        {state === 'processing' ? <><span className="spinner" />Analisando documentos</> : files.length === 1 ? 'Analisar 1 documento' : `Analisar ${files.length} documentos`}
       </button>
       {error && <div className="error-message" role="alert"><Icon name="alert" />{error}</div>}
     </div>

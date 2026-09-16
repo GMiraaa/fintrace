@@ -6,7 +6,7 @@ export function getDocumentFileUrl(documentId) {
 
 export async function getHealth() {
   const response = await fetch(`${API_BASE_URL}/api/health`)
-  if (!response.ok) throw new Error('Não foi possível acessar o backend.')
+  if (!response.ok) throw new Error('Não foi possível acessar o serviço de processamento.')
   return response.json()
 }
 

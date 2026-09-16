@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { getDocumentFileUrl } from '../api'
-import { STATUS_LABELS } from '../constants'
+import { REASON_LABELS, STATUS_LABELS } from '../constants'
 import { Icon } from './Icon'
 import { RecordDetail } from './RecordDetail'
 
 export function ResultsWorkspace({ result }) {
   const [activeIndex, setActiveIndex] = useState(0)
+  const resultGridRef = useRef(null)
   const summary = result.report.summary
   const activeDocument = result.report.documents[activeIndex]
   const activeRecord = result.records.find(
@@ -16,35 +17,51 @@ export function ResultsWorkspace({ result }) {
     (document) => document.processing_status !== 'ACCEPTED',
   )
 
-  useEffect(() => setActiveIndex(0), [result])
+  useEffect(() => {
+    const firstException = result.report.documents.findIndex(
+      (document) => document.processing_status !== 'ACCEPTED',
+    )
+    setActiveIndex(firstException >= 0 ? firstException : 0)
+  }, [result])
+
+  function openDocument(index) {
+    setActiveIndex(index)
+    window.requestAnimationFrame(() => {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      resultGridRef.current?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' })
+    })
+  }
 
   return (
     <section className="results" aria-labelledby="results-title">
       <div className="results-heading">
-        <div><p className="section-context">Asset Servicing · lote processado</p><h2 id="results-title">Mesa de controle</h2></div>
-        <button className="report-action" onClick={() => downloadJson('exception_report.json', result.report)} type="button"><Icon name="download" size={16} />Baixar relatório</button>
+        <div><p className="section-context">Análise concluída</p><h2 id="results-title">Confira o resultado</h2><p>Comece pelos documentos que precisam de atenção. Depois, abra os dados de cada registro para conferir as evidências.</p></div>
       </div>
-      <div className="summary-strip">
-        <SummaryValue label="Aceitos" value={summary.accepted} tone="accepted" />
-        <SummaryValue label="Revisão humana" value={summary.human_review} tone="review" />
-        <SummaryValue label="Informação pendente" value={summary.pending_information} tone="pending" />
-        <SummaryValue label="Falhas" value={summary.failed} tone="failed" />
+      <div className="batch-overview">
+        <div className="batch-total"><strong>{summary.processed}</strong><span>{summary.processed === 1 ? 'documento analisado' : 'documentos analisados'}</span></div>
+        <div className="batch-counts" aria-label="Resumo do lote">
+          <SummaryValue label="Aceitos" value={summary.accepted} tone="accepted" />
+          <SummaryValue label="Para revisar" value={summary.human_review} tone="review" />
+          <SummaryValue label="Aguardando informação" value={summary.pending_information} tone="pending" />
+          <SummaryValue label="Com falha" value={summary.failed} tone="failed" />
+        </div>
+        <button className="report-action" onClick={() => downloadJson('relatorio_de_excecoes.json', result.report)} type="button"><Icon name="download" size={16} />Baixar relatório do lote</button>
       </div>
 
-      <details className="batch-report">
-        <summary><span>Relatório curto de exceções</span><small>{summary.human_review + summary.pending_information + summary.failed} item(ns) requerem atenção</small></summary>
+      {exceptions.length > 0 && <section className="attention-queue" aria-labelledby="attention-title">
+        <header><div><Icon name="alert" size={19} /><span><strong id="attention-title">Comece por estes documentos</strong><small>{exceptions.length === 1 ? '1 documento precisa de uma ação' : `${exceptions.length} documentos precisam de uma ação`}</small></span></div></header>
         <div>{exceptions.map((document) => (
-          <button key={document.document_id} onClick={() => setActiveIndex(result.report.documents.indexOf(document))} type="button">
+          <button key={document.document_id} onClick={() => openDocument(result.report.documents.indexOf(document))} type="button">
             <StatusDot status={document.processing_status} />
-            <span><strong>{document.file_name}</strong><small>{document.exceptions.map((exception) => exception.message).join(' · ') || STATUS_LABELS[document.processing_status]}</small></span>
-            <span>{STATUS_LABELS[document.processing_status]}</span>
+            <span><strong>{document.file_name}</strong><small>{document.exceptions.map(exceptionText).join(' ') || STATUS_LABELS[document.processing_status]}</small></span>
+            <span>Abrir documento</span>
           </button>
-        ))}{exceptions.length === 0 && <p className="batch-report__empty">Nenhuma exceção registrada neste lote.</p>}</div>
-      </details>
+        ))}</div>
+      </section>}
 
-      <div className="result-grid">
+      <div className="result-grid" ref={resultGridRef}>
         <nav className="document-nav" aria-label="Documentos processados">
-          <div className="document-nav__heading"><strong>Documentos</strong><span>{summary.processed}</span></div>
+          <div className="document-nav__heading"><strong>Escolha um documento</strong><span>O resultado aparece ao lado</span></div>
           {result.report.documents.map((document, index) => (
             <button
               className={index === activeIndex ? 'document-link document-link--active' : 'document-link'}
@@ -52,7 +69,7 @@ export function ResultsWorkspace({ result }) {
               onClick={() => setActiveIndex(index)}
               type="button"
             >
-              <Icon name="file" />
+              <span className="document-number">{index + 1}</span>
               <span><strong>{document.file_name}</strong><small>{STATUS_LABELS[document.processing_status]}</small></span>
               <StatusDot status={document.processing_status} />
             </button>
@@ -71,14 +88,14 @@ function FailureDetail({ document }) {
     <div className="failure-detail">
       <Icon name="alert" size={28} />
       <h3>O documento não foi processado</h3>
-      <p>{document?.exceptions?.[0]?.message || 'Consulte os logs do backend.'}</p>
+      <p>{document?.exceptions?.[0] ? exceptionText(document.exceptions[0]) : 'Consulte o histórico técnico para identificar a causa.'}</p>
       {document?.document_id && <a className="secondary-action" href={getDocumentFileUrl(document.document_id)} rel="noreferrer" target="_blank"><Icon name="eye" size={17} />Ver documento original</a>}
     </div>
   )
 }
 
 function SummaryValue({ label, value, tone }) {
-  return <div className={`summary-value summary-value--${tone}`}><strong>{value}</strong><span>{label}</span></div>
+  return <div className={`summary-value summary-value--${tone}`}><span className={`status-dot status-dot--summary-${tone}`} /><strong>{value}</strong><span>{label}</span></div>
 }
 
 function StatusDot({ status }) {
@@ -93,4 +110,8 @@ function downloadJson(name, payload) {
   link.download = name
   link.click()
   URL.revokeObjectURL(url)
+}
+
+function exceptionText(exception) {
+  return REASON_LABELS[exception.code] || exception.message || 'O documento precisa de atenção.'
 }

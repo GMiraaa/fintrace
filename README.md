@@ -364,20 +364,20 @@ servida como `application/pdf`, com disposição `inline` e sem cache no navegad
 Identificadores inválidos, arquivos removidos ou hashes desconhecidos retornam
 `404`.
 
-### Uso da mesa de controle
+### Uso do painel de resultados
 
-Depois do processamento, a interface apresenta o lote em uma mesa operacional:
+Depois do processamento, a interface organiza o lote em uma sequência de
+conferência:
 
 1. A faixa superior resume aceites, revisões, acompanhamentos e falhas;
-2. O relatório curto de exceções permite ir diretamente ao documento afetado;
+2. A fila de atenção leva diretamente aos documentos que exigem uma ação;
 3. A navegação lateral seleciona o registro que será auditado;
-4. O bloco de decisão explica o resultado e os motivos de atuação humana;
-5. A validação de referência mostra o golden record, as chaves que confirmaram
-   a identidade, conflitos e possíveis correspondências;
-6. Cada campo pode ser expandido para mostrar origem, confiança, justificativa,
-   trecho literal, página, método de extração e regras relacionadas;
-7. O operador pode abrir o PDF no próprio detalhe e baixar o JSON individual;
-8. O relatório consolidado pode ser baixado pela ação `Baixar relatório`.
+4. O painel de decisão explica o resultado e a próxima ação esperada;
+5. A aba `Visão geral` resume os controles e a conferência com a base oficial;
+6. A aba `Dados extraídos` explica cada campo e permite abrir sua evidência;
+7. A aba `Histórico da análise` reúne tentativas automáticas e regras aplicadas;
+8. O operador pode abrir o PDF no próprio detalhe e baixar o JSON individual;
+9. O relatório consolidado pode ser baixado pela ação `Baixar relatório do lote`.
 
 O visualizador é carregado somente quando solicitado. A trilha estruturada
 continua sendo a fonte principal de auditoria, para que a conferência normal não

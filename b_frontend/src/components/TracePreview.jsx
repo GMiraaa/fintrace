@@ -3,16 +3,15 @@ import { Icon } from './Icon'
 export function TracePreview({ state, hasResult }) {
   const active = state === 'processing'
   const stages = [
-    ['Documento', 'Texto nativo ou OCR seletivo'],
-    ['Referência', 'ISIN, CNPJ, ticker e classe'],
-    ['Regras', 'Datas, valores e classificação'],
-    ['Decisão', 'Aceite, acompanhamento ou revisão'],
+    ['Ler o aviso', 'O sistema tenta texto nativo e OCR quando necessário.'],
+    ['Confirmar o ativo', 'CNPJ, ISIN, código de negociação e classe são conferidos.'],
+    ['Verificar os dados', 'Datas, valores e tipo de evento passam por regras.'],
+    ['Orientar a ação', 'O resultado informa se você pode aceitar ou precisa revisar.'],
   ]
   return (
     <div className={`trace-panel ${active ? 'trace-panel--active' : ''}`}>
       <div className="trace-heading">
-        <span>{active ? 'Processamento em curso' : hasResult ? 'Rastro concluído' : 'Rastro de processamento'}</span>
-        <small>4 controles</small>
+        <div><strong>{active ? 'Análise em andamento' : hasResult ? 'Análise concluída' : 'O que acontece depois do envio'}</strong><p>{active ? 'Mantenha esta página aberta enquanto os documentos são verificados.' : 'Quatro etapas produzem um registro pronto para conferência.'}</p></div>
       </div>
       <div className="trace-line">
         {stages.map(([title, description], index) => (
@@ -22,9 +21,7 @@ export function TracePreview({ state, hasResult }) {
           </div>
         ))}
       </div>
-      <blockquote>
-        “IA onde interpretação é necessária. Código onde determinismo é possível.”
-      </blockquote>
+      <p className="trace-note"><Icon name="shield" size={17} />Nenhum valor é aceito apenas porque uma IA o sugeriu.</p>
     </div>
   )
 }

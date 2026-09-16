@@ -56,9 +56,9 @@ function App() {
         </section>
         {result ? <ResultsWorkspace result={result} /> : (
           <section className="empty-guidance" aria-label="Como o FinTrace trabalha">
-            <span>Interpretação contextual</span>
-            <span>Validação determinística</span>
-            <span>Revisão baseada em risco</span>
+            <span>Leitura do documento</span>
+            <span>Conferência automática</span>
+            <span>Decisão explicada</span>
           </section>
         )}
       </main>
