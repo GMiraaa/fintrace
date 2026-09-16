@@ -1,6 +1,5 @@
 from src.confidence import calculate_document_confidence
 from src.models.enums import (
-    ConfidenceLevel,
     EventType,
     ExceptionCategory,
     ExtractionAttemptOutcome,
@@ -51,7 +50,7 @@ def route_for_review(record: DocumentRecord) -> DocumentRecord:
     if record.document_confidence.score < 75:
         review_reasons.append(
             _reason(
-                "DOCUMENT_CONFIDENCE_LOW",
+                "DOCUMENT_CONFIDENCE_BELOW_THRESHOLD",
                 ExceptionCategory.REVIEW_EXCEPTION,
                 (
                     "Document confidence is below 75%: "
@@ -106,12 +105,13 @@ def route_for_review(record: DocumentRecord) -> DocumentRecord:
                     f"Critical field is unreadable: {name}.",
                 )
             )
-        elif field.confidence is ConfidenceLevel.LOW:
+        elif field.confidence < 75:
             review_reasons.append(
                 _reason(
-                    "CRITICAL_FIELD_LOW_CONFIDENCE",
+                    "CRITICAL_FIELD_CONFIDENCE_BELOW_THRESHOLD",
                     ExceptionCategory.REVIEW_EXCEPTION,
-                    f"Critical field has low confidence: {name}.",
+                    f"Critical field confidence is below 75%: {name} "
+                    f"({field.confidence}%).",
                 )
             )
 

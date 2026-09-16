@@ -1,7 +1,6 @@
 """Modelos públicos de domínio utilizados pelo pipeline do FinTrace."""
 
 from .enums import (
-    ConfidenceLevel,
     EventType,
     ExceptionCategory,
     ExtractionMethod,
@@ -23,7 +22,6 @@ from .schemas import (
 
 __all__ = [
     "AuditableField",
-    "ConfidenceLevel",
     "CorporateAction",
     "DocumentRecord",
     "EventType",

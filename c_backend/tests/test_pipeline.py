@@ -10,7 +10,6 @@ from src.agent.schemas import (
 )
 from src.documents.preprocessor import DocumentPreprocessor
 from src.models.enums import (
-    ConfidenceLevel,
     EventType,
     FieldStatus,
     Origin,
@@ -156,10 +155,7 @@ def test_failed_rule_reduces_involved_field_confidence(tmp_path: Path) -> None:
     )
 
     assert record.processing_status is ProcessingStatus.REVIEW_REQUIRED
-    assert (
-        record.corporate_action.dates.payment_date.confidence
-        is ConfidenceLevel.LOW
-    )
+    assert record.corporate_action.dates.payment_date.confidence == 15
 
 
 def test_reference_conflict_marks_field_as_conflict(tmp_path: Path) -> None:
@@ -176,7 +172,7 @@ def test_reference_conflict_marks_field_as_conflict(tmp_path: Path) -> None:
     )
 
     assert record.security.ticker.status is FieldStatus.CONFLICT
-    assert record.security.ticker.confidence is ConfidenceLevel.LOW
+    assert record.security.ticker.confidence == 10
 
 
 def test_batch_continues_after_corrupt_pdf(tmp_path: Path) -> None:

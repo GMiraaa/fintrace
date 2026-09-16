@@ -1,4 +1,4 @@
-# FinTrace — Contrato de saída v1
+# FinTrace — Contrato de saída v2
 
 Este é o contrato normativo para os modelos Pydantic, persistência em JSON e
 respostas da API. A saída principal da LLM é um subconjunto deste contrato;
@@ -6,7 +6,7 @@ validação, confiança e roteamento são preenchidos pelo backend.
 
 ## Convenções
 
-- `schema_version`: `1.0`.
+- `schema_version`: `2.0`.
 - Datas: strings ISO 8601 (`YYYY-MM-DD`).
 - Decimais: strings, por exemplo `"0.1738420000"` e `"17.5"`.
 - Ausência de valor: `null`, nunca zero ou string vazia.
@@ -31,9 +31,10 @@ validação, confiança e roteamento são preenchidos pelo backend.
 
 `DOCUMENT`, `REFERENCE`, `DERIVED`, `UNKNOWN`.
 
-### ConfidenceLevel
+### Confiança
 
-`HIGH`, `MEDIUM`, `LOW`.
+`confidence` e `agent_agreement` são inteiros de `0` a `100`. O segundo pode
+ser `null` quando não houve múltiplas passagens de IA para comparar.
 
 ### ExtractionMethod
 
@@ -74,7 +75,8 @@ Todo campo auditável possui:
   "value": null,
   "status": "UNKNOWN",
   "origin": "UNKNOWN",
-  "confidence": "LOW",
+  "confidence": 0,
+  "agent_agreement": null,
   "sources": [],
   "validation": []
 }
@@ -85,12 +87,13 @@ A justificativa da confiança é composta, e não armazenada em uma frase livre:
 - `status` informa se o valor foi extraído, enriquecido, derivado, omitido pelo
   emissor, considerado ambíguo ou conflitante;
 - `origin` identifica documento, referência ou derivação;
+- `agent_agreement` quantifica quantas passagens convergiram para o valor/status
+  dominante;
 - `sources` preserva página, trecho literal e método de extração;
 - `validation` reúne as regras que afetaram especificamente o campo.
 
-Essa decomposição permite reconstruir deterministicamente por que um campo é
-`HIGH`, `MEDIUM` ou `LOW`, sem depender de uma justificativa textual produzida
-por LLM.
+Essa decomposição permite reconstruir deterministicamente o percentual do
+campo, sem depender de uma justificativa textual produzida por LLM.
 
 Uma fonte possui:
 
@@ -124,7 +127,7 @@ o JSON persistido.
 
 ```json
 {
-  "schema_version": "1.0",
+  "schema_version": "2.0",
   "document_id": "sha256:...",
   "source_document": {
     "file_name": "notice.pdf",
@@ -171,6 +174,15 @@ o JSON persistido.
     {
       "strategy": "BASIC_LLM",
       "outcome": "INSUFFICIENT",
+      "pass_number": 1,
+      "model": "gemini-3.5-flash-lite",
+      "unresolved_fields": ["corporate_action.event_type"],
+      "error": null
+    },
+    {
+      "strategy": "BASIC_LLM",
+      "outcome": "INSUFFICIENT",
+      "pass_number": 2,
       "model": "gemini-3.5-flash-lite",
       "unresolved_fields": ["corporate_action.event_type"],
       "error": null
@@ -178,9 +190,22 @@ o JSON persistido.
     {
       "strategy": "STRONG_LLM",
       "outcome": "SUFFICIENT",
+      "pass_number": 3,
       "model": "gemini-3.8-flash",
       "unresolved_fields": [],
       "error": null
+    }
+  ],
+  "preliminary_checks": [
+    {
+      "code": "AGENT_CONSENSUS",
+      "passed": false,
+      "message": "Divergência ou ausência de consenso em: corporate_action.event_type"
+    },
+    {
+      "code": "CLASSIFICATION_CONSISTENCY",
+      "passed": false,
+      "message": "Falharam as regras: EVENT_UNKNOWN"
     }
   ],
   "document_confidence": {
@@ -211,7 +236,7 @@ o JSON persistido.
       "corporate_action.financials.currency"
     ],
     "missing_fields": [],
-    "rationale": "2 de 2 campos materiais foram resolvidos..."
+    "rationale": "10 de 10 campos materiais foram resolvidos..."
   },
   "reference_validation": {
     "exact_match": false,
@@ -247,15 +272,19 @@ executadas não aparecem. Uma tentativa com `ERROR` registra uma mensagem
 técnica e permite que a próxima estratégia seja tentada; os campos já extraídos
 continuam preservados.
 
-`document_confidence` resume a cobertura dos campos materiais. O `score` usa a
-escala determinística alta = 100, média = 80, baixa = 40 e ausente = 0. A
+`preliminary_checks` registra o resultado obtido depois das duas passagens
+básicas e antes da decisão de escalada. Os códigos cobrem campos obrigatórios,
+consenso, grounding, golden records, datas, valores, classificação e OCR.
+
+`document_confidence` resume a cobertura dos campos materiais. O `score` é a
+média dos percentuais dos campos materiais; ausências contribuem com zero. A
 `completion_percentage` considera apenas presença ou ausência. As listas tornam
 o cálculo auditável e um score abaixo de 75 exige revisão humana. O percentual
 não representa uma probabilidade estatística produzida pela LLM.
 
-Com chave configurada, `BASIC_LLM` é sempre a primeira tentativa. `STRONG_LLM`
-entra quando restam campos materiais e possui as function callings. `PYTHON`
-só aparece sem chave ou após indisponibilidade de todas as tentativas de IA.
+Com chave configurada, há duas tentativas `BASIC_LLM`. `STRONG_LLM` é a terceira
+passagem quando qualquer check preliminar falha e possui as function callings.
+`PYTHON` só aparece sem chave ou após indisponibilidade de todas as tentativas de IA.
 
 ```json
 {
@@ -335,11 +364,11 @@ contrato para auditoria da seguinte forma:
 |---|---|
 | O que foi extraído | `value` e `status` |
 | De onde veio | `origin`, `sources.page`, `sources.evidence` e `extraction_method` |
-| Quão confiável é | `confidence` e justificativa derivada dos metadados do campo |
+| Quão confiável é | `confidence`, `agent_agreement` e metadados do campo |
 | Qual a cobertura geral | `document_confidence.score`, completude e campos ausentes |
 | Como foi validado | `validation`, `expected`, `observed` e `reference_validation` |
 | O que exige atuação | `processing_status`, `review`, `follow_up` e `exceptions` |
-| Como a cascata se comportou | `extraction_attempts` |
+| Como a cascata se comportou | `extraction_attempts` e `preliminary_checks` |
 
 O tipo do evento também é tratado como campo auditável, acompanhado por
 `classification_evidence` e `classification_conflicts`. O golden record é
@@ -412,7 +441,8 @@ Cada reason ou exception possui `code`, `category` e `message`.
 
 - `EVENT_CLASSIFICATION_AMBIGUOUS` — `REVIEW_EXCEPTION`
 - `TITLE_BODY_CLASSIFICATION_CONFLICT` — `REVIEW_EXCEPTION`
-- `CRITICAL_FIELD_LOW_CONFIDENCE` — `REVIEW_EXCEPTION`
+- `CRITICAL_FIELD_CONFIDENCE_BELOW_THRESHOLD` — `REVIEW_EXCEPTION`
+- `DOCUMENT_CONFIDENCE_BELOW_THRESHOLD` — `REVIEW_EXCEPTION`
 - `DOCUMENT_PARTIALLY_UNREADABLE` — `REVIEW_EXCEPTION`
 
 ### Erro técnico
@@ -448,7 +478,7 @@ O relatório usa o mesmo `schema_version` e contém:
 
 ```json
 {
-  "schema_version": "1.0",
+  "schema_version": "2.0",
   "summary": {
     "processed": 0,
     "accepted": 0,

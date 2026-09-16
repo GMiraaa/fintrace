@@ -7,7 +7,6 @@ from typing import Any, Generic, TypeVar
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .enums import (
-    ConfidenceLevel,
     EventType,
     ExceptionCategory,
     ExtractionAttemptOutcome,
@@ -55,7 +54,8 @@ class AuditableField(StrictModel, Generic[T]):
     value: T | None = None
     status: FieldStatus = FieldStatus.UNKNOWN
     origin: Origin = Origin.UNKNOWN
-    confidence: ConfidenceLevel = ConfidenceLevel.LOW
+    confidence: int = Field(default=0, ge=0, le=100)
+    agent_agreement: int | None = Field(default=None, ge=0, le=100)
     sources: list[SourceEvidence] = Field(default_factory=list)
     validation: list[ValidationResult] = Field(default_factory=list)
 
@@ -182,9 +182,16 @@ class RoutingReason(StrictModel):
 class ExtractionAttempt(StrictModel):
     strategy: ExtractionStrategy
     outcome: ExtractionAttemptOutcome
+    pass_number: int | None = Field(default=None, ge=1)
     model: str | None = None
     unresolved_fields: list[str] = Field(default_factory=list)
     error: str | None = None
+
+
+class PreliminaryCheck(StrictModel):
+    code: str = Field(min_length=1)
+    passed: bool
+    message: str = Field(min_length=1)
 
 
 class ReviewDecision(StrictModel):
@@ -207,7 +214,7 @@ class DocumentConfidence(StrictModel):
 
 
 class DocumentRecord(StrictModel):
-    schema_version: str = Field(default="1.0", pattern=r"^1\.0$")
+    schema_version: str = Field(default="2.0", pattern=r"^2\.0$")
     document_id: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
     source_document: SourceDocument
     processing_status: ProcessingStatus
@@ -215,6 +222,7 @@ class DocumentRecord(StrictModel):
     security: Security = Field(default_factory=Security)
     corporate_action: CorporateAction = Field(default_factory=CorporateAction)
     extraction_attempts: list[ExtractionAttempt] = Field(default_factory=list)
+    preliminary_checks: list[PreliminaryCheck] = Field(default_factory=list)
     document_confidence: DocumentConfidence = Field(
         default_factory=DocumentConfidence
     )
@@ -244,6 +252,6 @@ class ExceptionReportDocument(StrictModel):
 
 
 class ExceptionReport(StrictModel):
-    schema_version: str = Field(default="1.0", pattern=r"^1\.0$")
+    schema_version: str = Field(default="2.0", pattern=r"^2\.0$")
     summary: ExceptionReportSummary
     documents: list[ExceptionReportDocument] = Field(default_factory=list)

@@ -45,12 +45,15 @@ flowchart TD
     F --> G[Tesseract: duas versões da página]
     G --> D
     D --> H{Chave de IA configurada?}
-    H -- Sim --> J[Gemini básico analisa o documento]
+    H -- Sim --> J1[Gemini básico: passagem 1]
     H -- Não --> X[Contingência em Python]
-    J --> K{Campos críticos resolvidos?}
-    K -- Não --> L[Gemini forte]
-    K -- Sim --> M
-    J -. indisponível .-> L
+    J1 --> J2[Gemini básico: passagem 2 independente]
+    J2 --> K[Consenso por campo e validação preliminar]
+    K --> CHECK{Todos os checks passaram?}
+    CHECK -- Não --> L[Gemini forte: passagem 3 e veredito]
+    CHECK -- Sim --> M
+    J1 -. indisponível .-> J2
+    J2 -. indisponível .-> L
     L --> Z{Alguma IA respondeu validamente?}
     Z -- Sim --> M
     Z -- Não, todas indisponíveis --> X
@@ -211,14 +214,16 @@ indisponibilidade do provider, a extração Python entra como contingência.
 
 Com uma chave configurada, a ordem de execução é:
 
-1. O modelo básico analisa todo PDF e devolve uma estrutura tipada com evidências;
-2. Um avaliador verifica os campos materiais esperados para o tipo do evento,
-   incluindo a data de aprovação;
-3. Se houver lacunas ou ambiguidades, o modelo forte recebe o documento,
-   as pendências e o resultado parcial das tentativas anteriores;
-4. O modelo forte pode consultar golden records e reler texto, tabelas ou
+1. O modelo básico analisa o PDF duas vezes, com instruções independentes;
+2. As respostas são comparadas campo a campo. Valores e status iguais geram
+   consenso; divergências são preservadas para adjudicação;
+3. Antes de escalar, o backend verifica campos materiais, grounding das
+   evidências, referência, datas, cálculos, classificação e qualidade do OCR;
+4. Se qualquer check falhar, o modelo forte recebe o documento, o resultado
+   consolidado e os motivos objetivos da escalada como terceira passagem;
+5. O modelo forte consulta golden records e relê texto, tabelas ou
    coordenadas do PDF por function calling;
-5. O resultado consolidado passa pelas regras determinísticas e, se ainda não
+6. O resultado consolidado passa novamente pelas regras determinísticas e, se ainda não
    for seguro, segue para revisão humana.
 
 Python não é executado depois de uma resposta válida, porém incompleta, dos
@@ -226,12 +231,18 @@ modelos: esse cenário representa incerteza real e segue para revisão. A
 contingência local é reservada à ausência de chave ou indisponibilidade das
 tentativas de IA.
 
-Uma tentativa posterior não sobrescreve silenciosamente uma informação
-divergente. A divergência é preservada como `CONFLICT`. Conflitos objetivos de
-identidade, datas ou cálculos não são resolvidos por insistência na LLM.
+O modelo forte funciona como adjudicador das divergências entre as duas
+passagens básicas. Seu veredito não ignora a discordância: o percentual
+`agent_agreement` continua registrando o nível de consenso observado. Conflitos
+que permanecerem após a validação final seguem para revisão humana.
 
-Cada JSON registra `extraction_attempts`, informando estratégia, modelo,
-resultado, campos pendentes e eventual erro do provider.
+Cada JSON registra `extraction_attempts` e `preliminary_checks`, informando
+passagens, modelos, campos pendentes, erros e os checks que justificaram ou não
+a chamada do modelo forte.
+
+Os checks preliminares são: campos obrigatórios, consenso dos agentes,
+evidence grounding, validação contra golden records, coerência de datas,
+coerência financeira, consistência da classificação e qualidade do OCR.
 
 ### Preparação local para OCR
 
@@ -456,7 +467,7 @@ O mesmo payload de cada JSON é inserido como uma nova linha na tabela
 processamentos do mesmo documento preservam o histórico, enquanto os arquivos
 continuam sendo gerados para compor o entregável do case.
 
-O JSON gerado utiliza o schema `1.0`. Valores decimais são representados como
+O JSON gerado utiliza o schema `2.0`. Valores decimais são representados como
 strings e datas seguem ISO 8601. Consulte o
 [contrato de saída](f_docs/b_architecture/output-contract.md) completo.
 
@@ -470,26 +481,32 @@ no PostgreSQL.
 
 ## Confiança e status dos campos
 
-A confiança de cada campo permanece categórica:
+A confiança de cada campo é um inteiro entre `0` e `100`. Para valores vindos
+do documento, o cálculo combina 70% da qualidade objetiva e 30% da concordância
+entre as passagens do agente. A qualidade considera grounding, método de leitura
+e validações. As bases atuais são:
 
-- `HIGH`: evidência nativa explícita, enriquecimento por referência exata,
-  derivação aprovada por todas as regras, campo não aplicável ou ausência
-  explicitamente documentada;
-- `MEDIUM`: evidência obtida por OCR, referência sem correspondência exata,
-  derivação ainda não aprovada por todas as regras ou ausência declarada sem
-  trecho literal;
-- `LOW`: ambiguidade, conflito, conteúdo ilegível, falta de evidência ou falha
-  em uma validação do campo.
+- Evidência localizada em texto nativo: 92 pontos;
+- Evidência localizada por OCR: 78 pontos;
+- Referência confirmada: 95 pontos;
+- Derivação com todas as regras aprovadas: 95 pontos;
+- Informação explicitamente não divulgada com evidência: 95 pontos;
+- Campo ambíguo, conflitante ou ilegível: 10 pontos;
+- Regra relacionada reprovada: 15 pontos;
+- Campo ausente ou desconhecido: 0 ponto.
+
+`agent_agreement` registra separadamente o percentual de respostas que
+convergiram para o valor/status dominante. Assim, o operador consegue distinguir
+qualidade da evidência de estabilidade da interpretação do agente.
 
 Esses critérios aparecem na aba `Dados extraídos`, antes da lista de campos. A
 justificativa específica de cada valor permanece disponível ao expandir sua
 linha.
 
 O documento também recebe `document_confidence.score`, entre 0 e 100. Esse valor
-não é uma probabilidade estatística da LLM: é um indicador determinístico de
-cobertura e qualidade dos campos materiais. Campo resolvido com confiança alta
-vale 100 pontos, média vale 80, baixa vale 40 e campo ausente vale zero. O JSON
-preserva ainda a porcentagem de completude e as listas de campos esperados,
+não é uma probabilidade estatística da LLM: é a média dos percentuais dos
+campos materiais, com campos ausentes valendo zero. O JSON preserva ainda a
+porcentagem de completude e as listas de campos esperados,
 resolvidos e ausentes. Score inferior a 75 encaminha o documento para revisão.
 
 O status explica o que aconteceu com o campo independentemente da confiança.
@@ -497,14 +514,14 @@ Alguns exemplos são `EXTRACTED`, `REFERENCE_ENRICHED`, `DERIVED`,
 `NOT_DISCLOSED`, `AMBIGUOUS`, `CONFLICT` e `UNREADABLE`.
 
 Um campo pode corretamente apresentar `value: null`,
-`status: NOT_DISCLOSED` e `confidence: HIGH`: o sistema possui alta confiança de
+`status: NOT_DISCLOSED` e `confidence: 95`: o sistema possui forte evidência de
 que o emissor ainda não divulgou a informação.
 
 O schema é compartilhado por todos os tipos de evento. Assim, campos que não
-são exigidos para o evento atual podem permanecer `UNKNOWN/LOW` sem tornar o
+são exigidos para o evento atual podem permanecer `UNKNOWN` com `confidence: 0` sem tornar o
 documento inseguro. O roteamento considera os campos materiais para o tipo de
 evento — por exemplo, valor por ação em dividendos e proporção em grupamentos —,
-além dos conflitos e falhas de validação. Baixa confiança em campo material
+além dos conflitos e falhas de validação. Confiança abaixo de 75% em campo material
 sempre exige revisão.
 
 ## Revisão humana e exceções
@@ -596,11 +613,11 @@ um mock, e as regras determinísticas são testadas isoladamente.
   de retomada.
 - **Sem LangChain:** o SDK do provider e a orquestração explícita em Python
   mantêm o fluxo de controle visível.
-- **Score numérico não probabilístico:** os campos usam `HIGH`, `MEDIUM` e `LOW`;
-  o percentual do documento resume cobertura e qualidade por uma fórmula
-  explícita. Ele não deve ser interpretado como probabilidade calibrada de acerto.
-- **Sem retentativa automática ilimitada de LLM:** há no máximo uma chamada ao
-  modelo básico e uma ao forte. Repetir indefinidamente elevaria custo e poderia
+- **Percentual não probabilístico:** os campos e o documento usam uma fórmula
+  explícita de evidência, consenso e validação. O resultado não deve ser
+  interpretado como probabilidade calibrada de acerto sem um dataset rotulado.
+- **Sem retentativa automática ilimitada de LLM:** há duas passagens básicas e,
+  quando algum check falha, uma passagem forte. Repetir indefinidamente elevaria custo e poderia
   mascarar ambiguidade real em vez de encaminhá-la para uma pessoa.
 - **Sem confirmação de identidade por fuzzy matching:** similaridade textual
   pode sugerir um registro, mas somente identificadores financeiros o confirmam.

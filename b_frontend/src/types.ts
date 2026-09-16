@@ -19,7 +19,6 @@ export type FieldStatus =
   | 'UNKNOWN'
 
 export type Origin = 'DOCUMENT' | 'REFERENCE' | 'DERIVED' | 'UNKNOWN'
-export type ConfidenceLevel = 'HIGH' | 'MEDIUM' | 'LOW'
 export type ExtractionMethod = 'NATIVE_TEXT' | 'OCR'
 export type ValidationStatus = 'PASS' | 'WARN' | 'FAIL' | 'NOT_APPLICABLE' | 'NOT_EVALUATED'
 export type ProcessingStatus = 'ACCEPTED' | 'REVIEW_REQUIRED' | 'PENDING_INFORMATION' | 'FAILED'
@@ -46,7 +45,8 @@ export interface AuditableField<T = string> {
   value: T | null
   status: FieldStatus
   origin: Origin
-  confidence: ConfidenceLevel
+  confidence: number
+  agent_agreement: number | null
   sources: SourceEvidence[]
   validation: ValidationResult[]
 }
@@ -138,13 +138,20 @@ export interface RoutingReason {
 export interface ExtractionAttempt {
   strategy: ExtractionStrategy
   outcome: ExtractionAttemptOutcome
+  pass_number: number | null
   model: string | null
   unresolved_fields: string[]
   error: string | null
 }
 
+export interface PreliminaryCheck {
+  code: string
+  passed: boolean
+  message: string
+}
+
 export interface DocumentRecord {
-  schema_version: '1.0'
+  schema_version: '2.0'
   document_id: string
   source_document: SourceDocument
   processing_status: ProcessingStatus
@@ -161,6 +168,7 @@ export interface DocumentRecord {
   }
   corporate_action: CorporateAction
   extraction_attempts: ExtractionAttempt[]
+  preliminary_checks: PreliminaryCheck[]
   document_confidence: {
     score: number
     completion_percentage: number
@@ -185,7 +193,7 @@ export interface ExceptionReportDocument {
 }
 
 export interface ExceptionReport {
-  schema_version: '1.0'
+  schema_version: '2.0'
   summary: {
     processed: number
     accepted: number

@@ -4,7 +4,6 @@ from typing import TypeVar
 
 from src.documents.models import NormalizedDocument
 from src.models.enums import (
-    ConfidenceLevel,
     FieldStatus,
     Origin,
     ProcessingStatus,
@@ -138,7 +137,7 @@ def _map_field(
         value=field.value,
         status=status,
         origin=origin,
-        confidence=ConfidenceLevel.LOW,
+        confidence=0,
         sources=sources,
     )
 

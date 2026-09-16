@@ -20,7 +20,9 @@ flowchart TB
         CR[Confiança e roteamento]
     end
     subgraph Agente
-        BASIC[Gemini básico]
+        BASIC1[Gemini básico: passagem 1]
+        BASIC2[Gemini básico: passagem 2]
+        CHECKS[Consenso e checks preliminares]
         STRONG[Gemini forte]
         PY[Contingência Python]
         FC[Function callings controladas]
@@ -37,9 +39,10 @@ flowchart TB
     VIEW --> INPUT
     INPUT --> PRE --> ORCH
     ORCH --> EXT
-    EXT --> BASIC
-    BASIC -. pendências .-> STRONG
-    BASIC -. provider indisponível .-> STRONG
+    EXT --> BASIC1 --> BASIC2 --> CHECKS
+    CHECKS -. qualquer check falha .-> STRONG
+    CHECKS -. checks aprovados .-> VAL
+    BASIC2 -. provider indisponível .-> STRONG
     STRONG -. todas as tentativas indisponíveis .-> PY
     STRONG --> FC
     FC --> GOLDEN
@@ -65,9 +68,11 @@ flowchart TB
 
 ## Limites arquiteturais
 
-- Com chave configurada, todo documento passa pela LLM básica. A LLM forte é
-  acionada quando restam campos materiais pendentes. Python só extrai quando não
-  há chave ou todas as tentativas de IA estão indisponíveis.
+- Com chave configurada, todo documento passa por duas análises independentes da
+  LLM básica. A LLM forte é a terceira passagem quando há campo ausente,
+  discordância, evidência inválida, conflito de referência, falha temporal ou
+  financeira, classificação contraditória ou OCR fraco. Python só extrai quando
+  não há chave ou todas as tentativas de IA estão indisponíveis.
 - Regras matemáticas, temporais, de referência, confiança e roteamento são
   executadas em Python.
 - A integração com a LLM usa uma interface pequena e mockável, sem LangChain.
@@ -124,6 +129,9 @@ flowchart TB
   configurável por ambiente.
 - A data de aprovação é crítica para os eventos atualmente suportados. Sua
   ausência no retorno do modelo básico aciona o modelo forte.
+- Cada campo possui confiança percentual e `agent_agreement`. Para dados do
+  documento, a fórmula combina 70% da qualidade objetiva da evidência e 30% da
+  concordância entre as duas ou três passagens.
 - A tolerância inicial para bruto/líquido/tributo é `0.0000005`, usando Decimal.
 
 ## Contratos normativos
@@ -141,8 +149,9 @@ flowchart TB
   contaminam as regras de domínio.
 - **Pré-processamento separado da interpretação:** OCR pode ser testado e
   ajustado sem modificar prompts ou modelos financeiros.
-- **Cascata explícita:** modelo básico, modelo forte e contingência Python têm
-  ordem e critérios observáveis; uma LLM não decide quando outra é chamada.
+- **Cascata explícita:** duas passagens básicas, checks preliminares, eventual
+  veredito forte e contingência Python têm ordem e critérios observáveis; uma
+  LLM não decide quando outra é chamada.
 - **Validação posterior à extração:** mesmo quando a LLM consulta a referência,
   o pipeline repete o cruzamento e continua sendo a autoridade final.
 - **Modelos Pydantic compartilhados:** API, persistência, validação e frontend

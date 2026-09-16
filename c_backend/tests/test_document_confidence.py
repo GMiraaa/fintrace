@@ -4,13 +4,13 @@ from src.models.enums import FieldStatus
 from .factories import valid_document_record
 
 
-def test_document_confidence_is_full_when_material_fields_are_resolved() -> None:
+def test_document_confidence_averages_material_field_percentages() -> None:
     record = valid_document_record()
     apply_confidence(record)
 
     confidence = calculate_document_confidence(record)
 
-    assert confidence.score == 100
+    assert confidence.score == 92
     assert confidence.completion_percentage == 100
     assert confidence.missing_fields == []
 

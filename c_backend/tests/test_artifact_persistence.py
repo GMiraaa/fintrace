@@ -23,7 +23,7 @@ def test_artifact_repository_contract_accepts_in_memory_implementation() -> None
     accepted.save_artifact(
         artifact_type="DOCUMENT_RECORD",
         file_name="notice.json",
-        payload={"schema_version": "1.0"},
+        payload={"schema_version": "2.0"},
         document_id=f"sha256:{'a' * 64}",
         processing_status="ACCEPTED",
     )
@@ -43,7 +43,7 @@ def test_pipeline_persists_same_payload_to_file_and_repository(tmp_path) -> None
 
     pipeline._write_json(
         "notice.json",
-        {"schema_version": "1.0", "value": "test"},
+        {"schema_version": "2.0", "value": "test"},
         artifact_type="DOCUMENT_RECORD",
         document_id=f"sha256:{'a' * 64}",
         processing_status="ACCEPTED",

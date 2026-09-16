@@ -5,7 +5,6 @@ import pytest
 from pydantic import ValidationError
 
 from src.models.enums import (
-    ConfidenceLevel,
     EventType,
     ExtractionMethod,
     FieldStatus,
@@ -27,7 +26,7 @@ def test_auditable_field_serializes_decimal_as_string() -> None:
         value=Decimal("0.1738420000"),
         status=FieldStatus.EXTRACTED,
         origin=Origin.DOCUMENT,
-        confidence=ConfidenceLevel.HIGH,
+        confidence=95,
     )
 
     assert '"value":"0.1738420000"' in field.model_dump_json()
@@ -38,18 +37,18 @@ def test_auditable_date_uses_iso_8601() -> None:
         value=date(2026, 6, 16),
         status=FieldStatus.EXTRACTED,
         origin=Origin.DOCUMENT,
-        confidence=ConfidenceLevel.HIGH,
+        confidence=95,
     )
 
     assert field.model_dump(mode="json")["value"] == "2026-06-16"
 
 
-def test_not_disclosed_can_have_high_confidence() -> None:
+def test_not_disclosed_can_have_high_percentage_confidence() -> None:
     field = AuditableField[date](
         value=None,
         status=FieldStatus.NOT_DISCLOSED,
         origin=Origin.DOCUMENT,
-        confidence=ConfidenceLevel.HIGH,
+        confidence=95,
         sources=[
             SourceEvidence(
                 page=1,
@@ -60,7 +59,7 @@ def test_not_disclosed_can_have_high_confidence() -> None:
     )
 
     assert field.value is None
-    assert field.confidence is ConfidenceLevel.HIGH
+    assert field.confidence == 95
 
 
 def test_ratio_rejects_zero_values() -> None:
@@ -95,7 +94,7 @@ def test_minimal_document_record_is_valid() -> None:
         processing_status=ProcessingStatus.ACCEPTED,
     )
 
-    assert record.schema_version == "1.0"
+    assert record.schema_version == "2.0"
     assert record.corporate_action.event_type.value is None
     assert record.corporate_action.event_type.status is FieldStatus.UNKNOWN
 

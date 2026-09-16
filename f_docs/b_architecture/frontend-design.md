@@ -104,14 +104,14 @@ e `Histórico da análise`. O painel de decisão fica sempre visível acima dela
 Para cada documento, o painel de resultados torna visíveis:
 
 - O valor, o status e a origem de cada campo;
-- A confiança categórica e a justificativa dessa confiança;
+- A confiança percentual, a concordância entre agentes e sua justificativa;
 - O score agregado de 0 a 100, a completude e os campos materiais ausentes;
-- Os critérios objetivos dos três níveis de confiança, incluindo o efeito do OCR;
+- As faixas percentuais e os fatores objetivos, incluindo consenso e efeito do OCR;
 - O trecho literal, a página e o método de extração;
 - As regras associadas, incluindo valor esperado e observado;
 - O registro canônico usado e eventuais conflitos ou possíveis correspondências;
 - A decisão operacional e os motivos de revisão ou acompanhamento;
-- As tentativas da cascata de extração;
+- As tentativas da cascata e os checks preliminares que motivaram a escalada;
 - O PDF original, o JSON individual e o relatório curto de exceções.
 
 O relatório de exceções funciona também como navegação: ao selecionar uma

@@ -30,12 +30,6 @@ class Origin(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
-class ConfidenceLevel(StrEnum):
-    HIGH = "HIGH"
-    MEDIUM = "MEDIUM"
-    LOW = "LOW"
-
-
 class ExtractionMethod(StrEnum):
     NATIVE_TEXT = "NATIVE_TEXT"
     OCR = "OCR"

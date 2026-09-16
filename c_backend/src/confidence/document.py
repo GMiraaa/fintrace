@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.models.enums import ConfidenceLevel, EventType, FieldStatus
+from src.models.enums import EventType, FieldStatus
 from src.models.schemas import AuditableField, DocumentConfidence, DocumentRecord
 
 
@@ -32,8 +32,8 @@ def calculate_document_confidence(record: DocumentRecord) -> DocumentConfidence:
         missing_fields=missing,
         rationale=(
             f"{len(resolved)} de {count} campos materiais foram resolvidos. "
-            "O score pondera campos de confiança alta como 100 pontos, média "
-            "como 80, baixa como 40 e campos ausentes como zero."
+            "O score é a média dos percentuais de confiança dos campos materiais; "
+            "campos ausentes contribuem com zero."
         ),
     )
 
@@ -96,8 +96,4 @@ def _field_score(field: AuditableField[Any]) -> int:
     )
     if not resolved:
         return 0
-    return {
-        ConfidenceLevel.HIGH: 100,
-        ConfidenceLevel.MEDIUM: 80,
-        ConfidenceLevel.LOW: 40,
-    }[field.confidence]
+    return field.confidence

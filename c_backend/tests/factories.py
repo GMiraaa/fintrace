@@ -2,7 +2,6 @@ from datetime import date
 from decimal import Decimal
 
 from src.models.enums import (
-    ConfidenceLevel,
     EventType,
     ExtractionMethod,
     FieldStatus,
@@ -25,7 +24,7 @@ def document_field(value):
         value=value,
         status=FieldStatus.EXTRACTED,
         origin=Origin.DOCUMENT,
-        confidence=ConfidenceLevel.LOW,
+        confidence=0,
         sources=[
             SourceEvidence(
                 page=1,

@@ -2,6 +2,7 @@ from src.agent.cascade import CascadingCorporateActionExtractor
 from src.agent.deterministic import PythonCorporateActionExtractor
 from src.agent.gemini import GeminiCorporateActionAgent
 from src.agent.pdf_tools import build_pdfplumber_tools
+from src.agent.preliminary import build_preliminary_validator
 from src.agent.reference_tool import build_reference_lookup_tool
 from src.agent.skill_loader import load_project_agent_skills
 from src.config import AppSettings
@@ -58,6 +59,9 @@ def build_pipeline(settings: AppSettings) -> ProcessingPipeline:
                 )
                 if settings.gemini_api_key
                 else None
+            ),
+            preliminary_validator=build_preliminary_validator(
+                reference_repository
             ),
         ),
         reference_repository=reference_repository,

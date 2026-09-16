@@ -13,6 +13,7 @@ from src.models.enums import (
     ExtractionStrategy,
     FieldStatus,
 )
+from src.models.schemas import PreliminaryCheck
 
 
 def document(text: str = "Documento de teste") -> NormalizedDocument:
@@ -132,7 +133,7 @@ def test_approval_date_is_critical_for_cascade() -> None:
 
     result = cascade.extract(document())
 
-    assert basic.calls == 1
+    assert basic.calls == 2
     assert "corporate_action.dates.approval_date" in (
         result.attempts[0].unresolved_fields
     )
@@ -165,7 +166,7 @@ def test_cascade_prioritizes_basic_model_even_when_python_would_succeed() -> Non
 
     result = cascade.extract(document())
 
-    assert basic.calls == 1
+    assert basic.calls == 2
     assert strong.calls == 0
     assert python.calls == 0
     assert result.attempts[0].strategy is ExtractionStrategy.BASIC_LLM
@@ -184,10 +185,11 @@ def test_cascade_uses_basic_model_before_strong_model() -> None:
 
     result = cascade.extract(document())
 
-    assert basic.calls == 1
+    assert basic.calls == 2
     assert strong.calls == 0
     assert python.calls == 0
     assert [attempt.outcome for attempt in result.attempts] == [
+        ExtractionAttemptOutcome.SUFFICIENT,
         ExtractionAttemptOutcome.SUFFICIENT,
     ]
 
@@ -202,6 +204,7 @@ def test_cascade_reaches_strong_model_when_basic_is_insufficient() -> None:
     result = cascade.extract(document())
 
     assert [attempt.strategy for attempt in result.attempts] == [
+        ExtractionStrategy.BASIC_LLM,
         ExtractionStrategy.BASIC_LLM,
         ExtractionStrategy.STRONG_LLM,
     ]
@@ -218,7 +221,8 @@ def test_cascade_continues_after_basic_provider_error() -> None:
     result = cascade.extract(document())
 
     assert result.attempts[0].outcome is ExtractionAttemptOutcome.ERROR
-    assert result.attempts[1].outcome is ExtractionAttemptOutcome.SUFFICIENT
+    assert result.attempts[1].outcome is ExtractionAttemptOutcome.ERROR
+    assert result.attempts[2].outcome is ExtractionAttemptOutcome.SUFFICIENT
 
 
 def test_cascade_uses_python_when_no_model_is_configured() -> None:
@@ -246,6 +250,7 @@ def test_cascade_uses_python_when_all_models_are_unavailable() -> None:
     assert python.calls == 1
     assert [attempt.strategy for attempt in result.attempts] == [
         ExtractionStrategy.BASIC_LLM,
+        ExtractionStrategy.BASIC_LLM,
         ExtractionStrategy.STRONG_LLM,
         ExtractionStrategy.PYTHON,
     ]
@@ -262,6 +267,64 @@ def test_cascade_does_not_hide_non_transient_model_error_with_python() -> None:
 
     assert python.calls == 0
     assert [attempt.strategy for attempt in result.attempts] == [
-        ExtractionStrategy.BASIC_LLM
+        ExtractionStrategy.BASIC_LLM,
+        ExtractionStrategy.BASIC_LLM,
     ]
     assert result.attempts[0].outcome is ExtractionAttemptOutcome.ERROR
+
+
+class SequenceExtractor:
+    model = "modelo-básico"
+
+    def __init__(self, extractions: list[AgentExtraction]) -> None:
+        self.extractions = extractions
+        self.calls = 0
+
+    def extract(self, _document: NormalizedDocument) -> AgentExtraction:
+        extraction = self.extractions[self.calls]
+        self.calls += 1
+        return extraction.model_copy(deep=True)
+
+
+def test_disagreement_between_basic_passes_triggers_strong_verdict() -> None:
+    first = sufficient_dividend()
+    second = sufficient_dividend()
+    second.security.ticker = field("OUTR3")
+    verdict = sufficient_dividend()
+    strong = StaticExtractor(verdict, model="forte")
+    cascade = CascadingCorporateActionExtractor(
+        python_extractor=StaticExtractor(AgentExtraction()),
+        basic_agent=SequenceExtractor([first, second]),
+        strong_agent=strong,
+    )
+
+    result = cascade.extract(document())
+
+    assert strong.calls == 1
+    assert result.extraction.security.ticker.value == "TEST3"
+    assert result.agreement_scores["security.ticker"] == 67
+    assert any(
+        check.code == "AGENT_CONSENSUS" and not check.passed
+        for check in result.preliminary_checks
+    )
+
+
+def test_failed_preliminary_validation_triggers_strong_model() -> None:
+    strong = StaticExtractor(sufficient_dividend(), model="forte")
+    cascade = CascadingCorporateActionExtractor(
+        python_extractor=StaticExtractor(AgentExtraction()),
+        basic_agent=StaticExtractor(sufficient_dividend(), model="básico"),
+        strong_agent=strong,
+        preliminary_validator=lambda _extraction, _document: [
+            PreliminaryCheck(
+                code="DATE_COHERENCE",
+                passed=False,
+                message="Datas incoerentes.",
+            )
+        ],
+    )
+
+    result = cascade.extract(document())
+
+    assert strong.calls == 1
+    assert result.attempts[-1].strategy is ExtractionStrategy.STRONG_LLM

@@ -256,11 +256,11 @@ h1 { font-size: clamp(2.25rem, 4.5vw, 3.875rem); font-weight: 610; letter-spacin
 .confidence-levels { display: grid; grid-template-columns: repeat(3, 1fr); }
 .confidence-level { border-left: 4px solid var(--success); padding: 15px 16px; }
 .confidence-level + .confidence-level { border-top: 0; box-shadow: inset 1px 0 var(--line); }
-.confidence-level--medium { border-left-color: var(--warning); }
-.confidence-level--low { border-left-color: var(--danger); }
+.confidence-level--attention { border-left-color: var(--warning); }
+.confidence-level--critical { border-left-color: var(--danger); }
 .confidence-level strong { color: var(--success); font-size: 0.6875rem; }
-.confidence-level--medium strong { color: var(--warning); }
-.confidence-level--low strong { color: var(--danger); }
+.confidence-level--attention strong { color: var(--warning); }
+.confidence-level--critical strong { color: var(--danger); }
 .confidence-level ul { color: var(--muted); font-size: 0.5625rem; line-height: 1.45; margin: 8px 0 0; padding-left: 15px; }
 .confidence-level li + li { margin-top: 3px; }
 .reading-guide { background: #edf5fe; border-left: 4px solid var(--blue); display: grid; gap: 18px; grid-template-columns: repeat(3, 1fr); margin-top: 16px; padding: 15px 18px; }
@@ -282,9 +282,9 @@ h1 { font-size: clamp(2.25rem, 4.5vw, 3.875rem); font-weight: 610; letter-spacin
 .field-value { font-size: 0.75rem; font-variant-numeric: tabular-nums; font-weight: 620; overflow-wrap: anywhere; }
 .field-value--empty { color: #8b98a8; }
 .confidence { font-size: 0.625rem; font-weight: 700; }
-.confidence--high { color: var(--success); }
-.confidence--medium { color: var(--warning); }
-.confidence--low { color: var(--danger); }
+.confidence--strong { color: var(--success); }
+.confidence--attention { color: var(--warning); }
+.confidence--critical { color: var(--danger); }
 .field-origin { color: var(--muted); font-size: 0.625rem; }
 .field-evidence { background: var(--surface-muted); color: var(--muted); font-size: 0.6875rem; padding: 16px; }
 .confidence-reason { align-items: start; display: grid; gap: 10px; grid-template-columns: 120px 1fr; }

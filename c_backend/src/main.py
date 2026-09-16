@@ -28,7 +28,7 @@ def create_app(
 
     application = FastAPI(
         title="FinTrace API",
-        version="1.0.0",
+        version="2.0.0",
         description=(
             "Structured, validated, and auditable corporate action processing."
         ),

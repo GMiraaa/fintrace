@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 
 import { getDocumentFileUrl } from '../api'
 import {
-  CONFIDENCE_LABELS,
   DATE_LABELS,
   EVENT_TYPE_LABELS,
   EXTRACTION_METHOD_LABELS,
@@ -13,6 +12,7 @@ import {
   FINANCIAL_LABELS,
   MATCH_FIELD_LABELS,
   ORIGIN_LABELS,
+  PRELIMINARY_CHECK_LABELS,
   REASON_LABELS,
   STATUS_LABELS,
   VALIDATION_RULE_LABELS,
@@ -232,20 +232,20 @@ function ConfidenceGuide() {
     <section className="confidence-guide" aria-labelledby="confidence-guide-title">
       <div className="confidence-guide__intro">
         <h4 id="confidence-guide-title">Como a confiança é definida</h4>
-        <p>Cada campo mantém uma classificação categórica baseada em origem, leitura e validação. A porcentagem do documento agrega somente os campos materiais esperados para seu tipo de evento.</p>
+        <p>Cada campo recebe um percentual calculado por concordância entre as extrações, qualidade da evidência e validações. A porcentagem do documento agrega somente os campos materiais esperados para seu tipo de evento.</p>
       </div>
       <div className="confidence-levels">
-        <article className="confidence-level confidence-level--high">
-          <strong>Confiança alta</strong>
-          <ul><li>Texto nativo com evidência literal;</li><li>Base oficial com correspondência exata;</li><li>Cálculo aprovado por todas as regras;</li><li>Dado não aplicável ou ausência declarada com evidência.</li></ul>
+        <article className="confidence-level confidence-level--strong">
+          <strong>90% a 100%</strong>
+          <ul><li>As passagens do agente concordam;</li><li>A evidência literal foi localizada;</li><li>A base oficial e as regras não indicam divergências.</li></ul>
         </article>
-        <article className="confidence-level confidence-level--medium">
-          <strong>Confiança média</strong>
-          <ul><li>Evidência obtida por OCR;</li><li>Base oficial sem correspondência exata;</li><li>Valor calculado sem todas as regras aprovadas;</li><li>Ausência declarada sem trecho literal.</li></ul>
+        <article className="confidence-level confidence-level--attention">
+          <strong>75% a 89%</strong>
+          <ul><li>Houve OCR, concordância parcial ou evidência mais fraca;</li><li>O dado pode ser usado conforme o risco, mas merece conferência adicional.</li></ul>
         </article>
-        <article className="confidence-level confidence-level--low">
-          <strong>Confiança baixa</strong>
-          <ul><li>Campo ambíguo, conflitante ou ilegível;</li><li>Origem desconhecida ou ausência de evidência;</li><li>Pelo menos uma regra relacionada foi reprovada.</li></ul>
+        <article className="confidence-level confidence-level--critical">
+          <strong>0% a 74%</strong>
+          <ul><li>Campo ausente, ambíguo, conflitante ou ilegível;</li><li>Evidência não localizada ou regra relacionada reprovada;</li><li>Campos materiais nessa faixa exigem revisão humana.</li></ul>
         </article>
       </div>
     </section>
@@ -268,9 +268,21 @@ function AnalysisHistory({ record }: { record: DocumentRecord }) {
             <div className="validation-row" key={`${attempt.strategy}:${index}`}>
               <ValidationState status={attempt.outcome === 'SUFFICIENT' ? 'PASS' : attempt.outcome === 'ERROR' ? 'FAIL' : 'WARN'} />
               <span>
-                <strong>{EXTRACTION_STRATEGY_LABELS[attempt.strategy] || attempt.strategy}</strong>
+                <strong>{EXTRACTION_STRATEGY_LABELS[attempt.strategy] || attempt.strategy}{attempt.pass_number ? ` · passagem ${attempt.pass_number}` : ''}</strong>
                 <small>{attempt.model ? `Modelo utilizado: ${attempt.model}. ` : ''}{attempt.error || (attempt.unresolved_fields.length ? `Campos ainda pendentes: ${attempt.unresolved_fields.map(fieldPathLabel).join(', ')}.` : 'Todos os campos críticos foram resolvidos.')}</small>
               </span>
+            </div>
+          ))}</div>
+        </section>
+      )}
+
+      {(record.preliminary_checks || []).length > 0 && (
+        <section className="history-section">
+          <h4>Validação antes da escalada</h4>
+          <div>{record.preliminary_checks.map((check) => (
+            <div className="validation-row" key={check.code}>
+              <ValidationState status={check.passed ? 'PASS' : 'FAIL'} />
+              <span><strong>{PRELIMINARY_CHECK_LABELS[check.code] || humanizeCode(check.code)}</strong><small>{check.message}</small></span>
             </div>
           ))}</div>
         </section>
@@ -362,11 +374,12 @@ function FieldRow({ label, field }: { label: string; field: DisplayField }) {
       <summary>
         <span className="field-name"><strong>{label}</strong><small>{FIELD_HELP[label]}</small></span>
         <span className={field.value == null ? 'field-value field-value--empty' : 'field-value'}>{formatValue(field.value, label)}</span>
-        <span className={`confidence confidence--${field.confidence.toLowerCase()}`}>{CONFIDENCE_LABELS[field.confidence] || field.confidence}</span>
+        <span className={`confidence confidence--${confidenceBand(field.confidence)}`}>{field.confidence}%</span>
         <span className="field-origin">{FIELD_STATUS_LABELS[field.status] || field.status}</span>
       </summary>
       <div className="field-evidence">
         <div className="confidence-reason"><strong>Como interpretar</strong><span>{confidenceReason(field)}</span></div>
+        {field.agent_agreement != null && <p className="field-provenance">Concordância entre as passagens do agente: <strong>{field.agent_agreement}%</strong></p>}
         <p className="field-provenance">Origem do valor: <strong>{ORIGIN_LABELS[field.origin] || field.origin}</strong></p>
         {field.sources.length ? field.sources.map((source, index) => <blockquote key={`${source.page}:${index}`}>“{source.evidence}”<cite>Página {source.page}, leitura por {methodLabel(source.extraction_method).toLowerCase()}</cite></blockquote>) : <p>Não há trecho documental associado. Isso é esperado para valores trazidos da base oficial ou calculados por regra.</p>}
         {field.validation.length > 0 && <div className="field-validations"><strong>Regras relacionadas a este campo</strong>{field.validation.map((validation, index) => <ValidationRow compact key={`${validation.rule}:${index}`} validation={validation} />)}</div>}
@@ -409,9 +422,15 @@ function confidenceReason(field: DisplayField): string {
   if (field.status === 'NOT_DISCLOSED') return field.sources.length ? 'O próprio documento informa que o dado ainda não foi divulgado.' : 'O dado está pendente e não possui evidência literal associada.'
   if (field.origin === 'REFERENCE') return 'O valor veio da base oficial após a confirmação da identidade do ativo.'
   if (field.origin === 'DERIVED') return 'O valor foi calculado por uma regra determinística e passou pelas validações relacionadas.'
-  if (field.sources.some((source) => source.extraction_method === 'OCR')) return 'O valor foi encontrado em uma página digitalizada por OCR, o que reduz a confiança para média.'
-  if (field.origin === 'DOCUMENT' && field.sources.length) return 'O valor possui um trecho literal encontrado diretamente no texto do documento.'
+  if (field.sources.some((source) => source.extraction_method === 'OCR')) return `O valor foi encontrado por OCR; concordância entre passagens e validações resultaram em ${field.confidence}%.`
+  if (field.origin === 'DOCUMENT' && field.sources.length) return `O valor possui evidência literal e recebeu ${field.confidence}% após consenso e validações.`
   return 'Não há evidência suficiente para aumentar a confiança deste campo.'
+}
+
+function confidenceBand(confidence: number): 'strong' | 'attention' | 'critical' {
+  if (confidence >= 90) return 'strong'
+  if (confidence >= 75) return 'attention'
+  return 'critical'
 }
 
 function reasonText(reason: RoutingReason): string {

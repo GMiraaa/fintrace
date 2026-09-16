@@ -59,6 +59,17 @@ export const EXTRACTION_OUTCOME_LABELS: Record<string, string> = {
   ERROR: 'Erro',
 }
 
+export const PRELIMINARY_CHECK_LABELS: Record<string, string> = {
+  REQUIRED_FIELDS: 'Campos obrigatórios',
+  AGENT_CONSENSUS: 'Consenso entre as passagens',
+  EVIDENCE_GROUNDING: 'Localização das evidências',
+  GOLDEN_VALIDATION: 'Validação na base oficial',
+  DATE_COHERENCE: 'Coerência das datas',
+  FINANCIAL_COHERENCE: 'Coerência dos valores',
+  CLASSIFICATION_CONSISTENCY: 'Consistência da classificação',
+  OCR_QUALITY: 'Qualidade do OCR',
+}
+
 export const ORIGIN_LABELS: Record<string, string> = {
   DOCUMENT: 'Documento',
   REFERENCE: 'Base de referência',
@@ -69,12 +80,6 @@ export const ORIGIN_LABELS: Record<string, string> = {
 export const EXTRACTION_METHOD_LABELS: Record<string, string> = {
   NATIVE_TEXT: 'Texto nativo',
   OCR: 'OCR',
-}
-
-export const CONFIDENCE_LABELS: Record<string, string> = {
-  HIGH: 'Alta',
-  MEDIUM: 'Média',
-  LOW: 'Baixa',
 }
 
 export const MATCH_FIELD_LABELS: Record<string, string> = {
@@ -133,9 +138,9 @@ export const REASON_LABELS: Record<string, string> = {
   FINANCIAL_VALUES_INCONSISTENT: 'Os valores financeiros não são matematicamente coerentes.',
   EVENT_CLASSIFICATION_AMBIGUOUS: 'Não foi possível identificar o tipo de evento com segurança.',
   TITLE_BODY_CLASSIFICATION_CONFLICT: 'O título e o conteúdo do aviso indicam eventos diferentes.',
-  CRITICAL_FIELD_LOW_CONFIDENCE: 'Um campo crítico apresenta confiança baixa.',
+  CRITICAL_FIELD_CONFIDENCE_BELOW_THRESHOLD: 'Um campo crítico ficou abaixo de 75% de confiança.',
   DOCUMENT_PARTIALLY_UNREADABLE: 'Parte do documento não pôde ser lida com segurança.',
-  DOCUMENT_CONFIDENCE_LOW: 'A confiança agregada do documento ficou abaixo de 75%.',
+  DOCUMENT_CONFIDENCE_BELOW_THRESHOLD: 'A confiança agregada do documento ficou abaixo de 75%.',
   PDF_CORRUPT: 'O PDF está corrompido ou não pôde ser aberto.',
   OCR_FAILED: 'A leitura das páginas digitalizadas falhou.',
   LLM_PROVIDER_UNAVAILABLE: 'O serviço de inteligência artificial está indisponível.',

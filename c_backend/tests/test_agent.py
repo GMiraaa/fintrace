@@ -91,6 +91,29 @@ def test_gemini_adapter_accepts_parsed_response() -> None:
     assert result.corporate_action.event_type.value is EventType.JCP
 
 
+def test_gemini_consensus_passes_use_independent_instructions() -> None:
+    prompts = []
+
+    def generate_content(**kwargs):
+        prompts.append(kwargs["contents"])
+        return SimpleNamespace(parsed=AgentExtraction(), text=None)
+
+    agent = GeminiCorporateActionAgent(
+        api_key="",
+        model="test-model",
+        skill_text="test skill",
+        client=SimpleNamespace(
+            models=SimpleNamespace(generate_content=generate_content)
+        ),
+    )
+
+    agent.extract_for_consensus(normalized_document(), pass_number=1)
+    agent.extract_for_consensus(normalized_document(), pass_number=2)
+
+    assert "Build the primary structured extraction" in prompts[0]
+    assert "Recheck identifiers, dates, amounts" in prompts[1]
+
+
 def test_gemini_adapter_exposes_reference_function_calling_tool() -> None:
     received = {}
     response = SimpleNamespace(parsed=AgentExtraction(), text=None)

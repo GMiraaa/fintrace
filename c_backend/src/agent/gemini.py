@@ -50,6 +50,23 @@ class GeminiCorporateActionAgent:
     def extract(self, document: NormalizedDocument) -> AgentExtraction:
         return self._extract(document)
 
+    def extract_for_consensus(
+        self,
+        document: NormalizedDocument,
+        *,
+        pass_number: int,
+    ) -> AgentExtraction:
+        focus = (
+            "Independent consensus pass. Analyze the document from scratch without "
+            "assuming another response is correct. "
+            + (
+                "Build the primary structured extraction."
+                if pass_number == 1
+                else "Recheck identifiers, dates, amounts, event classification, and evidence especially carefully."
+            )
+        )
+        return self._extract(document, context=focus)
+
     def extract_with_context(
         self,
         document: NormalizedDocument,

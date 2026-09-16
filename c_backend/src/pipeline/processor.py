@@ -19,7 +19,6 @@ from src.documents.preprocessor import (
 )
 from src.logging_config import log_event
 from src.models.enums import (
-    ConfidenceLevel,
     ExceptionCategory,
     FieldStatus,
     Origin,
@@ -93,11 +92,16 @@ class ProcessingPipeline:
         if isinstance(extraction_result, ExtractionRun):
             extraction = extraction_result.extraction
             extraction_attempts = extraction_result.attempts
+            preliminary_checks = extraction_result.preliminary_checks
+            agreement_scores = extraction_result.agreement_scores
         else:
             extraction = extraction_result
             extraction_attempts = []
+            preliminary_checks = []
+            agreement_scores = {}
         record = extraction_to_document_record(extraction, normalized)
         record.extraction_attempts = extraction_attempts
+        record.preliminary_checks = preliminary_checks
 
         record.reference_validation = self.reference_repository.lookup(
             issuer=record.issuer.name.value,
@@ -120,7 +124,7 @@ class ProcessingPipeline:
         record.validations.extend(validate_event_rules(record.corporate_action))
         self._attach_field_validations(record)
 
-        apply_confidence(record)
+        apply_confidence(record, agreement_scores=agreement_scores)
         record.document_confidence = calculate_document_confidence(record)
         route_for_review(record)
 
@@ -146,7 +150,7 @@ class ProcessingPipeline:
             except Exception as exc:
                 failures.append(self._failed_report_document(Path(path), exc))
                 failure_payload = {
-                    "schema_version": "1.0",
+                    "schema_version": "2.0",
                     **failures[-1].model_dump(mode="json"),
                 }
                 self._write_json(
@@ -206,7 +210,7 @@ class ProcessingPipeline:
                 field.value = value
                 field.status = FieldStatus.REFERENCE_ENRICHED
                 field.origin = Origin.REFERENCE
-                field.confidence = ConfidenceLevel.LOW
+                field.confidence = 0
 
     def _reference_validation_results(
         self,
