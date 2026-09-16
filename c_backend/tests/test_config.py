@@ -34,10 +34,9 @@ def test_settings_support_separate_llm_models(
 ) -> None:
     monkeypatch.setenv("LLM_BASIC_MODEL", "modelo-basico")
     monkeypatch.setenv("LLM_STRONG_MODEL", "modelo-forte")
-    monkeypatch.setenv("ENABLE_STRONG_LLM_FALLBACK", "false")
 
     settings = AppSettings.from_env(tmp_path)
 
     assert settings.llm_basic_model == "modelo-basico"
     assert settings.llm_strong_model == "modelo-forte"
-    assert settings.enable_strong_llm_fallback is False
+    assert settings.database_url.startswith("postgresql://")

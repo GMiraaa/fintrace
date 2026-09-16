@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from src.agent.cascade import CascadingCorporateActionExtractor
 from src.agent.deterministic import PythonCorporateActionExtractor
-from src.agent.gemini import AgentProviderError
+from src.agent.gemini import AgentProviderError, AgentProviderUnavailableError
 from src.agent.schemas import AgentExtraction, ExtractedEvidence, ExtractedField
 from src.documents.models import NormalizedDocument, NormalizedPage
 from src.models.enums import (
@@ -43,10 +43,12 @@ def sufficient_dividend() -> AgentExtraction:
     extraction = AgentExtraction()
     extraction.issuer.name = field("Companhia Teste S.A.")
     extraction.security.isin = field("BRTESTACNOR1")
+    extraction.security.ticker = field("TEST3")
     extraction.corporate_action.event_type = field(EventType.DIVIDEND)
     extraction.corporate_action.dates.approval_date = field(date(2026, 1, 5))
     extraction.corporate_action.dates.record_date = field(date(2026, 1, 10))
     extraction.corporate_action.dates.ex_date = field(date(2026, 1, 11))
+    extraction.corporate_action.dates.payment_date = field(date(2026, 1, 20))
     extraction.corporate_action.financials.gross_amount_per_share = field(
         Decimal("0.25")
     )
@@ -69,7 +71,14 @@ class FailingExtractor:
     model = "modelo-indisponível"
 
     def extract(self, _document: NormalizedDocument) -> AgentExtraction:
-        raise AgentProviderError("provider indisponível")
+        raise AgentProviderUnavailableError("provider indisponível")
+
+
+class InvalidRequestExtractor:
+    model = "modelo-com-configuração-inválida"
+
+    def extract(self, _document: NormalizedDocument) -> AgentExtraction:
+        raise AgentProviderError("requisição inválida")
 
 
 def test_python_extractor_reads_explicit_jcp_fields() -> None:
@@ -113,10 +122,12 @@ aprovou o pagamento de Juros sobre o Capital Próprio.
 def test_approval_date_is_critical_for_cascade() -> None:
     incomplete = sufficient_dividend()
     incomplete.corporate_action.dates.approval_date = ExtractedField()
-    basic = StaticExtractor(sufficient_dividend(), model="básico")
+    basic = StaticExtractor(incomplete, model="básico")
+    strong = StaticExtractor(sufficient_dividend(), model="forte")
     cascade = CascadingCorporateActionExtractor(
-        python_extractor=StaticExtractor(incomplete),
+        python_extractor=StaticExtractor(AgentExtraction()),
         basic_agent=basic,
+        strong_agent=strong,
     )
 
     result = cascade.extract(document())
@@ -127,7 +138,22 @@ def test_approval_date_is_critical_for_cascade() -> None:
     )
 
 
-def test_cascade_stops_after_sufficient_python_extraction() -> None:
+def test_isin_ticker_and_payment_date_are_independently_required() -> None:
+    incomplete = sufficient_dividend()
+    incomplete.security.ticker = ExtractedField()
+    incomplete.corporate_action.dates.payment_date = ExtractedField()
+
+    unresolved = CascadingCorporateActionExtractor(
+        python_extractor=StaticExtractor(AgentExtraction()),
+        basic_agent=StaticExtractor(incomplete, model="básico"),
+        strong_agent=StaticExtractor(sufficient_dividend(), model="forte"),
+    ).extract(document()).attempts[0].unresolved_fields
+
+    assert "security.ticker" in unresolved
+    assert "corporate_action.dates.payment_date" in unresolved
+
+
+def test_cascade_prioritizes_basic_model_even_when_python_would_succeed() -> None:
     python = StaticExtractor(sufficient_dividend())
     basic = StaticExtractor(sufficient_dividend(), model="básico")
     strong = StaticExtractor(sufficient_dividend(), model="forte")
@@ -139,9 +165,10 @@ def test_cascade_stops_after_sufficient_python_extraction() -> None:
 
     result = cascade.extract(document())
 
-    assert basic.calls == 0
+    assert basic.calls == 1
     assert strong.calls == 0
-    assert result.attempts[0].strategy is ExtractionStrategy.PYTHON
+    assert python.calls == 0
+    assert result.attempts[0].strategy is ExtractionStrategy.BASIC_LLM
     assert result.attempts[0].outcome is ExtractionAttemptOutcome.SUFFICIENT
 
 
@@ -159,8 +186,8 @@ def test_cascade_uses_basic_model_before_strong_model() -> None:
 
     assert basic.calls == 1
     assert strong.calls == 0
+    assert python.calls == 0
     assert [attempt.outcome for attempt in result.attempts] == [
-        ExtractionAttemptOutcome.INSUFFICIENT,
         ExtractionAttemptOutcome.SUFFICIENT,
     ]
 
@@ -175,7 +202,6 @@ def test_cascade_reaches_strong_model_when_basic_is_insufficient() -> None:
     result = cascade.extract(document())
 
     assert [attempt.strategy for attempt in result.attempts] == [
-        ExtractionStrategy.PYTHON,
         ExtractionStrategy.BASIC_LLM,
         ExtractionStrategy.STRONG_LLM,
     ]
@@ -191,5 +217,51 @@ def test_cascade_continues_after_basic_provider_error() -> None:
 
     result = cascade.extract(document())
 
-    assert result.attempts[1].outcome is ExtractionAttemptOutcome.ERROR
-    assert result.attempts[2].outcome is ExtractionAttemptOutcome.SUFFICIENT
+    assert result.attempts[0].outcome is ExtractionAttemptOutcome.ERROR
+    assert result.attempts[1].outcome is ExtractionAttemptOutcome.SUFFICIENT
+
+
+def test_cascade_uses_python_when_no_model_is_configured() -> None:
+    python = StaticExtractor(sufficient_dividend())
+    cascade = CascadingCorporateActionExtractor(python_extractor=python)
+
+    result = cascade.extract(document())
+
+    assert python.calls == 1
+    assert [attempt.strategy for attempt in result.attempts] == [
+        ExtractionStrategy.PYTHON
+    ]
+
+
+def test_cascade_uses_python_when_all_models_are_unavailable() -> None:
+    python = StaticExtractor(sufficient_dividend())
+    cascade = CascadingCorporateActionExtractor(
+        python_extractor=python,
+        basic_agent=FailingExtractor(),
+        strong_agent=FailingExtractor(),
+    )
+
+    result = cascade.extract(document())
+
+    assert python.calls == 1
+    assert [attempt.strategy for attempt in result.attempts] == [
+        ExtractionStrategy.BASIC_LLM,
+        ExtractionStrategy.STRONG_LLM,
+        ExtractionStrategy.PYTHON,
+    ]
+
+
+def test_cascade_does_not_hide_non_transient_model_error_with_python() -> None:
+    python = StaticExtractor(sufficient_dividend())
+    cascade = CascadingCorporateActionExtractor(
+        python_extractor=python,
+        basic_agent=InvalidRequestExtractor(),
+    )
+
+    result = cascade.extract(document())
+
+    assert python.calls == 0
+    assert [attempt.strategy for attempt in result.attempts] == [
+        ExtractionStrategy.BASIC_LLM
+    ]
+    assert result.attempts[0].outcome is ExtractionAttemptOutcome.ERROR

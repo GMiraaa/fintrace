@@ -11,7 +11,7 @@ from src.agent.base import CorporateActionAgent
 from src.agent.cascade import CascadingCorporateActionExtractor, ExtractionRun
 from src.agent.gemini import AgentProviderError, AgentStructuredOutputError
 from src.agent.mapping import extraction_to_document_record
-from src.confidence.engine import apply_confidence
+from src.confidence import apply_confidence, calculate_document_confidence
 from src.documents.preprocessor import (
     CorruptPdfError,
     DocumentPreprocessor,
@@ -33,6 +33,7 @@ from src.models.schemas import (
     RoutingReason,
     ValidationResult,
 )
+from src.persistence import ArtifactRepository
 from src.routing.report import build_exception_report
 from src.routing.router import route_for_review
 from src.tools.dates import validate_dates
@@ -62,11 +63,13 @@ class ProcessingPipeline:
         agent: CorporateActionAgent | CascadingCorporateActionExtractor,
         reference_repository: GoldenRecordRepository,
         output_dir: str | Path,
+        artifact_repository: ArtifactRepository | None = None,
     ) -> None:
         self.preprocessor = preprocessor
         self.agent = agent
         self.reference_repository = reference_repository
         self.output_dir = Path(output_dir)
+        self.artifact_repository = artifact_repository
 
     def process_document(
         self,
@@ -118,6 +121,7 @@ class ProcessingPipeline:
         self._attach_field_validations(record)
 
         apply_confidence(record)
+        record.document_confidence = calculate_document_confidence(record)
         route_for_review(record)
 
         if persist:
@@ -148,6 +152,9 @@ class ProcessingPipeline:
                 self._write_json(
                     f"{Path(path).stem}.json",
                     failure_payload,
+                    artifact_type="DOCUMENT_RECORD",
+                    document_id=failures[-1].document_id,
+                    processing_status=ProcessingStatus.FAILED.value,
                 )
                 logger.exception(
                     "document processing failed",
@@ -162,7 +169,11 @@ class ProcessingPipeline:
                 )
 
         report = build_exception_report(records, failures=failures)
-        self._write_json("exception_report.json", report.model_dump(mode="json"))
+        self._write_json(
+            "exception_report.json",
+            report.model_dump(mode="json"),
+            artifact_type="EXCEPTION_REPORT",
+        )
         return BatchProcessingResult(records=records, report=report)
 
     def _apply_reference(self, record: DocumentRecord) -> None:
@@ -285,9 +296,23 @@ class ProcessingPipeline:
 
     def _write_record(self, record: DocumentRecord) -> None:
         file_name = f"{Path(record.source_document.file_name).stem}.json"
-        self._write_json(file_name, record.model_dump(mode="json"))
+        self._write_json(
+            file_name,
+            record.model_dump(mode="json"),
+            artifact_type="DOCUMENT_RECORD",
+            document_id=record.document_id,
+            processing_status=record.processing_status.value,
+        )
 
-    def _write_json(self, file_name: str, payload: dict) -> None:
+    def _write_json(
+        self,
+        file_name: str,
+        payload: dict,
+        *,
+        artifact_type: str,
+        document_id: str | None = None,
+        processing_status: str | None = None,
+    ) -> None:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         destination = self.output_dir / file_name
         temporary = destination.with_suffix(destination.suffix + ".tmp")
@@ -298,10 +323,18 @@ class ProcessingPipeline:
                 file.flush()
                 os.fsync(file.fileno())
             temporary.replace(destination)
+            if self.artifact_repository is not None:
+                self.artifact_repository.save_artifact(
+                    artifact_type=artifact_type,
+                    file_name=file_name,
+                    payload=payload,
+                    document_id=document_id,
+                    processing_status=processing_status,
+                )
         except Exception as exc:
             temporary.unlink(missing_ok=True)
             raise OutputPersistenceError(
-                f"unable to write output file: {destination.name}"
+                f"unable to persist output artifact: {destination.name}"
             ) from exc
 
     def _failed_report_document(

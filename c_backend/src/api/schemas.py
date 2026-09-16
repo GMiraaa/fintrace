@@ -8,6 +8,7 @@ class HealthResponse(StrictModel):
     provider: str
     provider_configured: bool
     golden_records_available: bool
+    database_configured: bool
 
 
 class BatchUploadResponse(StrictModel):

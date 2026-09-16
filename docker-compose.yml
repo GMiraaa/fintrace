@@ -1,4 +1,21 @@
 services:
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fintrace}
+      POSTGRES_USER: ${POSTGRES_USER:-fintrace}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fintrace}
+    volumes:
+      - fintrace_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
   backend:
     build:
       context: .
@@ -19,9 +36,11 @@ services:
       LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
       LLM_BASIC_MODEL: ${LLM_BASIC_MODEL:-gemini-3.5-flash-lite}
       LLM_STRONG_MODEL: ${LLM_STRONG_MODEL:-gemini-3.8-flash}
-      ENABLE_BASIC_LLM_FALLBACK: ${ENABLE_BASIC_LLM_FALLBACK:-true}
-      ENABLE_STRONG_LLM_FALLBACK: ${ENABLE_STRONG_LLM_FALLBACK:-true}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-fintrace}:${POSTGRES_PASSWORD:-fintrace}@database:5432/${POSTGRES_DB:-fintrace}
+    depends_on:
+      database:
+        condition: service_healthy
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     volumes:
@@ -52,3 +71,6 @@ services:
     ports:
       - "${FRONTEND_PORT:-5173}:80"
     restart: unless-stopped
+
+volumes:
+  fintrace_postgres_data:

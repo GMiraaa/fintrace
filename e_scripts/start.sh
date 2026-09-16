@@ -24,7 +24,7 @@ if [[ ! -f .env ]]; then
   echo "Sem GEMINI_API_KEY, o processamento continuará somente com Python."
 fi
 
-echo "Construindo e iniciando backend e frontend..."
+echo "Construindo e iniciando PostgreSQL, backend e frontend..."
 docker compose up --build --detach --wait --wait-timeout "${START_TIMEOUT_SECONDS:-120}" backend frontend
 docker compose ps
 

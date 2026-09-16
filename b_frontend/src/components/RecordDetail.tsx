@@ -124,6 +124,11 @@ function DocumentViewer({ record, url }: { record: DocumentRecord; url: string }
 
 function DecisionPanel({ record }: { record: DocumentRecord }) {
   const reasons = [...(record.review?.reasons || []), ...(record.follow_up?.reasons || [])]
+  const documentConfidence = record.document_confidence || {
+    score: 0,
+    completion_percentage: 0,
+    missing_fields: [],
+  }
   const accepted = record.processing_status === 'ACCEPTED'
   const title = accepted ? 'Registro pronto para uso' : STATUS_LABELS[record.processing_status]
   const guidance = accepted
@@ -141,6 +146,14 @@ function DecisionPanel({ record }: { record: DocumentRecord }) {
         <span>Resultado deste documento</span>
         <h4>{title}</h4>
         <p>{guidance}</p>
+        <div className="document-confidence">
+          <div>
+            <strong>{documentConfidence.score}%</strong>
+            <span>Confiança do documento</span>
+          </div>
+          <progress aria-label="Confiança do documento" max="100" value={documentConfidence.score} />
+          <small>{documentConfidence.completion_percentage}% dos campos materiais foram coletados.{documentConfidence.missing_fields.length > 0 ? ` Pendentes: ${documentConfidence.missing_fields.map(fieldPathLabel).join(', ')}.` : ''}</small>
+        </div>
         {reasons.length > 0 && <ul>{reasons.map((reason) => <li key={`${reason.code}:${reason.message}`}>{reasonText(reason)}</li>)}</ul>}
       </div>
       <dl className="document-metadata">
@@ -219,7 +232,7 @@ function ConfidenceGuide() {
     <section className="confidence-guide" aria-labelledby="confidence-guide-title">
       <div className="confidence-guide__intro">
         <h4 id="confidence-guide-title">Como a confiança é definida</h4>
-        <p>A classificação não é uma porcentagem estimada. Ela segue regras objetivas sobre origem, leitura e validação.</p>
+        <p>Cada campo mantém uma classificação categórica baseada em origem, leitura e validação. A porcentagem do documento agrega somente os campos materiais esperados para seu tipo de evento.</p>
       </div>
       <div className="confidence-levels">
         <article className="confidence-level confidence-level--high">

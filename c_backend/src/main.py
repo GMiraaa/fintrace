@@ -50,6 +50,7 @@ def create_app(
             provider=app_settings.llm_provider,
             provider_configured=bool(app_settings.gemini_api_key),
             golden_records_available=app_settings.golden_records_path.is_file(),
+            database_configured=bool(app_settings.database_url),
         )
 
     @application.post(

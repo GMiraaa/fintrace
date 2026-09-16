@@ -48,7 +48,7 @@ export const FINANCIAL_LABELS: Record<string, string> = {
 }
 
 export const EXTRACTION_STRATEGY_LABELS: Record<string, string> = {
-  PYTHON: 'Leitura automática local',
+  PYTHON: 'Contingência local em Python',
   BASIC_LLM: 'Modelo de IA básico',
   STRONG_LLM: 'Modelo de IA avançado',
 }
@@ -135,6 +135,7 @@ export const REASON_LABELS: Record<string, string> = {
   TITLE_BODY_CLASSIFICATION_CONFLICT: 'O título e o conteúdo do aviso indicam eventos diferentes.',
   CRITICAL_FIELD_LOW_CONFIDENCE: 'Um campo crítico apresenta confiança baixa.',
   DOCUMENT_PARTIALLY_UNREADABLE: 'Parte do documento não pôde ser lida com segurança.',
+  DOCUMENT_CONFIDENCE_LOW: 'A confiança agregada do documento ficou abaixo de 75%.',
   PDF_CORRUPT: 'O PDF está corrompido ou não pôde ser aberto.',
   OCR_FAILED: 'A leitura das páginas digitalizadas falhou.',
   LLM_PROVIDER_UNAVAILABLE: 'O serviço de inteligência artificial está indisponível.',

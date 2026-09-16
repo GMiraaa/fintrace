@@ -162,6 +162,41 @@ def test_gemini_adapter_exposes_pdf_tools_bound_to_current_document(
     assert "source_path" not in document.model_dump()
 
 
+def test_strong_agent_requires_pdf_tool_during_escalation(tmp_path: Path) -> None:
+    received = {}
+    pdf_path = tmp_path / "notice.pdf"
+    pdf_path.write_bytes(b"pdf")
+    document = normalized_document().model_copy(
+        update={"source_path": str(pdf_path)}
+    )
+
+    def extract_pdf_text(page_start: int = 1) -> str:
+        return str(page_start)
+
+    agent = GeminiCorporateActionAgent(
+        api_key="",
+        model="strong-model",
+        skill_text="test skill",
+        pdf_tools_builder=lambda _path: [extract_pdf_text],
+        client=SimpleNamespace(
+            models=SimpleNamespace(
+                generate_content=lambda **kwargs: (
+                    received.update(kwargs)
+                    or SimpleNamespace(parsed=AgentExtraction(), text=None)
+                )
+            )
+        ),
+    )
+
+    agent.extract_with_context(
+        document,
+        current=AgentExtraction(),
+        unresolved_fields=["issuer.name"],
+    )
+
+    assert "call at least one PDFPLUMBER tool" in received["contents"]
+
+
 def test_skill_loader_includes_required_references() -> None:
     skill_dir = (
         Path(__file__).parents[2] / "d_skills/corporate_actions"

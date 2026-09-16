@@ -7,6 +7,7 @@ from src.agent.skill_loader import load_project_agent_skills
 from src.config import AppSettings
 from src.documents.preprocessor import DocumentPreprocessor
 from src.pipeline.processor import ProcessingPipeline
+from src.persistence import PostgresArtifactRepository
 from src.tools.reference import GoldenRecordRepository
 
 
@@ -15,11 +16,7 @@ class ProviderNotConfiguredError(RuntimeError):
 
 
 def build_pipeline(settings: AppSettings) -> ProcessingPipeline:
-    llm_enabled = (
-        settings.enable_basic_llm_fallback
-        or settings.enable_strong_llm_fallback
-    )
-    if llm_enabled and settings.gemini_api_key and settings.llm_provider != "gemini":
+    if settings.gemini_api_key and settings.llm_provider != "gemini":
         raise ProviderNotConfiguredError(
             f"unsupported LLM provider: {settings.llm_provider}"
         )
@@ -29,6 +26,11 @@ def build_pipeline(settings: AppSettings) -> ProcessingPipeline:
         settings.golden_records_path
     )
     reference_lookup_tool = build_reference_lookup_tool(reference_repository)
+    artifact_repository = (
+        PostgresArtifactRepository(settings.database_url)
+        if settings.database_url
+        else None
+    )
     return ProcessingPipeline(
         preprocessor=DocumentPreprocessor(
             native_text_min_chars=settings.native_text_min_chars,
@@ -42,10 +44,8 @@ def build_pipeline(settings: AppSettings) -> ProcessingPipeline:
                     api_key=settings.gemini_api_key,
                     model=settings.llm_basic_model,
                     skill_text=skill_text,
-                    reference_lookup_tool=reference_lookup_tool,
-                    pdf_tools_builder=build_pdfplumber_tools,
                 )
-                if settings.enable_basic_llm_fallback and settings.gemini_api_key
+                if settings.gemini_api_key
                 else None
             ),
             strong_agent=(
@@ -56,10 +56,11 @@ def build_pipeline(settings: AppSettings) -> ProcessingPipeline:
                     reference_lookup_tool=reference_lookup_tool,
                     pdf_tools_builder=build_pdfplumber_tools,
                 )
-                if settings.enable_strong_llm_fallback and settings.gemini_api_key
+                if settings.gemini_api_key
                 else None
             ),
         ),
         reference_repository=reference_repository,
         output_dir=settings.output_dir,
+        artifact_repository=artifact_repository,
     )

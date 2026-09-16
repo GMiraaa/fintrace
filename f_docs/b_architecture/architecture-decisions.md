@@ -20,15 +20,16 @@ flowchart TB
         CR[Confiança e roteamento]
     end
     subgraph Agente
-        PY[Extrator Python]
         BASIC[Gemini básico]
         STRONG[Gemini forte]
+        PY[Contingência Python]
         FC[Function callings controladas]
     end
     subgraph Dados
         INPUT[(PDFs)]
         GOLDEN[(golden_records.csv)]
         OUTPUT[(JSONs)]
+        PG[(PostgreSQL JSONB)]
     end
 
     FE --> HTTP --> ORCH
@@ -36,14 +37,15 @@ flowchart TB
     VIEW --> INPUT
     INPUT --> PRE --> ORCH
     ORCH --> EXT
-    EXT --> PY
-    PY -. pendências .-> BASIC
+    EXT --> BASIC
     BASIC -. pendências .-> STRONG
-    BASIC --> FC
+    BASIC -. provider indisponível .-> STRONG
+    STRONG -. todas as tentativas indisponíveis .-> PY
     STRONG --> FC
     FC --> GOLDEN
     FC --> INPUT
     ORCH --> VAL --> CR --> OUTPUT
+    CR --> PG
     GOLDEN --> VAL
 ```
 
@@ -63,8 +65,9 @@ flowchart TB
 
 ## Limites arquiteturais
 
-- A extração segue uma cascata fixa: Python, LLM básica e LLM forte. Cada
-  etapa só é acionada se a anterior deixar campos críticos pendentes.
+- Com chave configurada, todo documento passa pela LLM básica. A LLM forte é
+  acionada quando restam campos materiais pendentes. Python só extrai quando não
+  há chave ou todas as tentativas de IA estão indisponíveis.
 - Regras matemáticas, temporais, de referência, confiança e roteamento são
   executadas em Python.
 - A integração com a LLM usa uma interface pequena e mockável, sem LangChain.
@@ -72,7 +75,7 @@ flowchart TB
   complementar `.skills/b_backend_skills/.agents/skills/pdf-extraction`. Esta
   orienta a interpretação de estrutura e tabelas, mas não substitui o
   pré-processamento determinístico do backend.
-- Ao acionar uma LLM, o SDK expõe `lookup_golden_record` como function calling.
+- Ao acionar o modelo forte, o SDK expõe `lookup_golden_record` como function calling.
   O agente usa a consulta para detectar divergências, enquanto o pipeline repete
   a validação deterministicamente e permanece como autoridade final.
 - O SDK também expõe `extract_pdf_text`, `extract_pdf_tables` e
@@ -84,8 +87,9 @@ flowchart TB
 - O provider inicial é Gemini, usando `gemini-3.5-flash-lite` no nível básico e
   `gemini-3.8-flash` no nível forte. A escolha aproveita a camada gratuita e a
   saída estruturada, mas não altera o núcleo determinístico.
-- O MVP persiste PDFs e JSONs no sistema de arquivos. Não há banco de
-  dados, fila, banco vetorial ou arquitetura multiagente autônoma.
+- O sistema persiste os JSONs no filesystem e, de forma append-only, na tabela
+  `processing_artifacts` do PostgreSQL. Não há fila, banco vetorial ou
+  arquitetura multiagente autônoma.
 - O endpoint de processamento é síncrono. Uma fila só será
   introduzida mediante requisito de volume, latência ou recuperação de jobs.
 - O endpoint `GET /api/documents/{document_id}/file` resolve o PDF pelo SHA-256
@@ -118,9 +122,8 @@ flowchart TB
   por uma pontuação determinística de qualidade textual.
 - O limiar inicial para OCR é 80 caracteres úteis por página e permanece
   configurável por ambiente.
-- A data de aprovação é crítica para os eventos atualmente suportados. Datas
-  rotuladas e datas narrativas de reunião ou assembleia são extraídas em Python;
-  a ausência desse campo aciona o próximo nível da cascata.
+- A data de aprovação é crítica para os eventos atualmente suportados. Sua
+  ausência no retorno do modelo básico aciona o modelo forte.
 - A tolerância inicial para bruto/líquido/tributo é `0.0000005`, usando Decimal.
 
 ## Contratos normativos
@@ -138,8 +141,8 @@ flowchart TB
   contaminam as regras de domínio.
 - **Pré-processamento separado da interpretação:** OCR pode ser testado e
   ajustado sem modificar prompts ou modelos financeiros.
-- **Cascata explícita:** Python, modelo básico e modelo forte têm ordem e
-  critérios observáveis; uma LLM não decide quando outra LLM deve ser chamada.
+- **Cascata explícita:** modelo básico, modelo forte e contingência Python têm
+  ordem e critérios observáveis; uma LLM não decide quando outra é chamada.
 - **Validação posterior à extração:** mesmo quando a LLM consulta a referência,
   o pipeline repete o cruzamento e continua sendo a autoridade final.
 - **Modelos Pydantic compartilhados:** API, persistência, validação e frontend
@@ -148,8 +151,8 @@ flowchart TB
   relatórios, enums e respostas HTTP em `types.ts`. Há alguma duplicação em
   relação ao Pydantic, aceita no MVP; `npm run typecheck` detecta divergências
   durante o desenvolvimento.
-- **Filesystem no MVP:** permite inspecionar e entregar diretamente os artefatos
-  exigidos pelo case sem banco ou infraestrutura adicional.
+- **Persistência dupla:** o filesystem permite entregar e inspecionar os
+  artefatos do case; o PostgreSQL preserva cada geração em JSONB para histórico.
 - **Documento localizado por identidade de conteúdo:** o mesmo SHA-256 usado no
   contrato identifica o PDF no visualizador e evita confiar em caminhos vindos
   do navegador. A busca linear é adequada ao lote pequeno; em produção, seria
@@ -165,9 +168,9 @@ flowchart TB
   referência necessária cabe em um CSV pequeno. Introduzir recuperação
   semântica aumentaria complexidade e poderia confundir similaridade com
   identidade financeira.
-- **Não usar banco relacional:** o case pede artefatos JSON e opera com um lote
-  pequeno. O filesystem não oferece concorrência ou histórico transacional, mas
-  é suficiente e diretamente auditável neste escopo.
+- **Não normalizar o domínio em dezenas de tabelas:** o contrato já é um JSON
+  auditável e evolutivo. JSONB preserva o payload integral; colunas operacionais
+  mantêm tipo, documento, status e data consultáveis.
 - **Não usar fila assíncrona:** o endpoint permanece síncrono e simples. Isso não
   escala bem para alto volume, mas evita infraestrutura operacional que o case
   não exige.
@@ -176,9 +179,9 @@ flowchart TB
 - **Não dar acesso irrestrito ao PDF:** as tools ficam vinculadas ao documento
   atual. A LLM perde liberdade para navegar no ambiente, mas não consegue ler
   arquivos alheios ao processamento.
-- **Não atribuir probabilidade numérica à confiança:** sem dataset rotulado e
-  calibração, um valor como “93%” seria enganoso. Os níveis categóricos são
-  explicados por status, origem, evidência, método e validações.
+- **Não apresentar o score como probabilidade:** o percentual do documento é
+  uma fórmula de cobertura e qualidade dos campos materiais. Sem dataset
+  rotulado, ele não representa chance estatística de acerto.
 - **Não validar checksum de CNPJ como bloqueio:** os dados são sintéticos e os
   dígitos verificadores não representam identificadores reais. O valor é
   normalizado e comparado com a base fornecida.

@@ -16,6 +16,10 @@ class AgentProviderError(RuntimeError):
     pass
 
 
+class AgentProviderUnavailableError(AgentProviderError):
+    pass
+
+
 class AgentStructuredOutputError(AgentProviderError):
     pass
 
@@ -85,8 +89,15 @@ class GeminiCorporateActionAgent:
             tools.append(self.reference_lookup_tool)
         if self.pdf_tools_builder is not None and document.source_path:
             tools.extend(self.pdf_tools_builder(document.source_path))
+            tool_requirement = (
+                "This is an escalation: call at least one PDFPLUMBER tool before "
+                "returning the final structure, choosing the operation that best "
+                "addresses the unresolved fields. "
+                if context
+                else ""
+            )
             prompt = (
-                f"{prompt}\n\nPDFPLUMBER TOOLS: Use these tools only when the "
+                f"{prompt}\n\nPDFPLUMBER TOOLS: {tool_requirement}Use these tools when the "
                 "normalized text is insufficient, ambiguous, or loses table/layout "
                 "relationships. Tool results are document evidence; cite the returned "
                 "page number. Do not invent evidence from coordinates alone."
@@ -104,6 +115,10 @@ class GeminiCorporateActionAgent:
                 ),
             )
         except Exception as exc:
+            if _provider_is_temporarily_unavailable(exc):
+                raise AgentProviderUnavailableError(
+                    "Gemini is temporarily unavailable"
+                ) from exc
             raise AgentProviderError("Gemini extraction request failed") from exc
 
         parsed = getattr(response, "parsed", None)
@@ -128,3 +143,13 @@ class GeminiCorporateActionAgent:
             raise AgentStructuredOutputError(
                 "Gemini returned invalid structured output"
             ) from exc
+
+
+def _provider_is_temporarily_unavailable(error: Exception) -> bool:
+    status_code = getattr(error, "status_code", None) or getattr(error, "code", None)
+    if status_code in {408, 429, 500, 502, 503, 504}:
+        return True
+    error_name = type(error).__name__.lower()
+    return isinstance(error, (ConnectionError, TimeoutError, OSError)) or any(
+        marker in error_name for marker in ("timeout", "connection", "servererror")
+    )

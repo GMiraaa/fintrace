@@ -9,7 +9,7 @@ interface TracePreviewProps {
 export function TracePreview({ state, hasResult }: TracePreviewProps) {
   const active = state === 'processing'
   const stages = [
-    ['Ler o aviso', 'O sistema tenta texto nativo e OCR quando necessário.'],
+    ['Analisar o aviso', 'A IA interpreta todo documento; OCR prepara páginas escaneadas.'],
     ['Confirmar o ativo', 'CNPJ, ISIN, código de negociação e classe são conferidos.'],
     ['Verificar os dados', 'Datas, valores e tipo de evento passam por regras.'],
     ['Orientar a ação', 'O resultado informa se você pode aceitar ou precisa revisar.'],

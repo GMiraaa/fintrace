@@ -5,10 +5,12 @@ automação determinística e IA, projetada para transformar avisos financeiros
 heterogêneos em registros
 estruturados, validados e auditáveis.
 
-A plataforma processa PDFs nativos e escaneados, tenta interpretar o evento
-primeiro com Python e escala para LLMs somente quando necessário. Em seguida,
-valida o resultado com regras determinísticas e encaminha incertezas materiais
-para um operador humano. Cada campo relevante preserva
+A plataforma processa PDFs nativos e escaneados e, quando uma chave de API está
+configurada, envia todos os documentos primeiro a um agente de IA econômico.
+Um modelo mais forte, apoiado por function calling, trata as pendências. Python
+é a contingência de extração quando não há chave ou o provider está
+indisponível. Em seguida, o pipeline valida o resultado e encaminha incertezas
+materiais para um operador humano. Cada campo relevante preserva
 valor, status, origem, confiança, evidência e resultados de validação.
 
 > IA onde interpretação é necessária. Código onde determinismo é possível.
@@ -42,19 +44,21 @@ flowchart TD
     E --> F[Cinza, contraste, redução de ruído, nitidez e Otsu]
     F --> G[Tesseract: duas versões da página]
     G --> D
-    D --> H[Extração determinística em Python]
-    H --> I{Campos críticos resolvidos?}
-    I -- Não --> J[Gemini básico]
+    D --> H{Chave de IA configurada?}
+    H -- Sim --> J[Gemini básico analisa o documento]
+    H -- Não --> X[Contingência em Python]
     J --> K{Campos críticos resolvidos?}
     K -- Não --> L[Gemini forte]
-    I -- Sim --> M[Registro Pydantic]
     K -- Sim --> M
-    L --> M
-    J -. function calling .-> T[Golden records e tools pdfplumber]
-    L -. function calling .-> T
+    J -. indisponível .-> L
+    L --> Z{Alguma IA respondeu validamente?}
+    Z -- Sim --> M
+    Z -- Não, todas indisponíveis --> X
+    X --> M[Registro Pydantic]
+    L -. function calling .-> T[Golden records e tools pdfplumber]
     M --> N[Validação canônica contra golden_records.csv]
     N --> O[Regras de datas, valores e classificação]
-    O --> P[Motor de confiança]
+    O --> P[Confiança por campo e score do documento]
     P --> Q{Decisão}
     Q -->|Seguro| R[ACCEPTED]
     Q -->|Informação futura| S[PENDING_INFORMATION]
@@ -62,15 +66,15 @@ flowchart TD
     R --> V[JSON por documento e relatório consolidado]
     S --> V
     U --> V
+    V --> DB[(PostgreSQL JSONB)]
 ```
 
 A LLM participa somente da interpretação. Validações financeiras, temporais,
 de identidade, confiança e roteamento permanecem determinísticas, para que uma
 resposta probabilística nunca tenha autoridade final sobre o registro.
 
-Existem, portanto, duas formas distintas de uso das tools. Quando a cascata
-chega a uma LLM, o modelo pode consultar a referência e o PDF por function
-calling. Independentemente de a LLM ter sido acionada, todo registro passa
+O modelo forte pode consultar a referência e o PDF por function calling.
+Independentemente de a LLM ter sido acionada, todo registro passa
 obrigatoriamente pelas funções determinísticas de referência e coerência do
 pipeline antes de receber confiança e decisão operacional.
 
@@ -90,8 +94,9 @@ pipeline antes de receber confiança e decisão operacional.
   pequeno e pode ser substituída sem alterar as regras determinísticas.
 - **`Decimal` do Python:** evita erros de ponto flutuante binário em cálculos
   financeiros.
-- **CSV + filesystem:** são suficientes para o volume atual e mantêm o sistema
-  fácil de inspecionar.
+- **PostgreSQL + JSONB:** preserva o histórico de todos os JSONs gerados sem
+  retirar do filesystem os artefatos diretamente avaliados no case.
+- **CSV:** mantém a pequena base de referência simples e inspecionável.
 
 A camada gratuita do Gemini pode utilizar o conteúdo enviado para aprimorar produtos
 do Google. Ele é adequado ao conjunto de dados sintético fornecido; os termos do
@@ -105,7 +110,7 @@ flowchart LR
     UI[React / TypeScript / Vite] -->|HTTP multipart e JSON| API[FastAPI]
     API --> PIPE[Pipeline de processamento]
     PIPE --> DOC[Pré-processamento<br/>PyMuPDF, Pillow e Tesseract]
-    PIPE --> CASCADE[Cascata de extração<br/>Python, Gemini básico e forte]
+    PIPE --> CASCADE[Cascata de extração<br/>Gemini básico, forte e contingência Python]
     CASCADE --> REFTOOL[Function calling<br/>golden records]
     CASCADE --> PDFTOOL[Function calling<br/>pdfplumber]
     PIPE --> RULES[Regras determinísticas<br/>referência, datas e valores]
@@ -113,6 +118,7 @@ flowchart LR
     REFTOOL --> CSV[(golden_records.csv)]
     RULES --> CSV
     PIPE --> JSON[(JSONs e relatório)]
+    PIPE --> PG[(PostgreSQL / JSONB)]
 ```
 
 Essa estrutura foi escolhida para manter limites claros:
@@ -130,9 +136,8 @@ Essa estrutura foi escolhida para manter limites claros:
 - Dados de entrada, referência e saída ficam separados para evitar que o golden
   record seja confundido com um documento submetido.
 
-Para o escopo do case, essa divisão oferece auditabilidade sem introduzir
-camadas operacionais que ainda não agregariam valor, como filas, bancos ou
-orquestração distribuída.
+Para o escopo do case, essa divisão oferece auditabilidade sem introduzir filas
+ou orquestração distribuída, mas preserva o histórico dos resultados no banco.
 
 ## Estrutura do repositório
 
@@ -152,6 +157,7 @@ fintrace/
 │   │   ├── documents/            # Extração nativa e OCR
 │   │   ├── models/               # Contratos de domínio em Pydantic
 │   │   ├── pipeline/             # Orquestração e persistência
+│   │   ├── persistence/          # Artefatos JSON no PostgreSQL
 │   │   ├── routing/              # Revisão e relatório de exceções
 │   │   └── tools/                # Regras de referência, datas, valores e eventos
 │   └── tests/
@@ -164,8 +170,8 @@ fintrace/
 
 ## Configuração
 
-Copie o arquivo de exemplo. Adicione uma chave da API Gemini caso queira habilitar
-os níveis de fallback com IA:
+Copie o arquivo de exemplo. Com uma chave Gemini, a IA passa a ser o caminho
+principal de todos os documentos:
 
 ```bash
 cp .env.example .env
@@ -177,9 +183,8 @@ Configuração dos modelos:
 LLM_PROVIDER=gemini
 LLM_BASIC_MODEL=gemini-3.5-flash-lite
 LLM_STRONG_MODEL=gemini-3.8-flash
-ENABLE_BASIC_LLM_FALLBACK=true
-ENABLE_STRONG_LLM_FALLBACK=true
 GEMINI_API_KEY=sua-chave
+DATABASE_URL=postgresql://fintrace:fintrace@localhost:5432/fintrace
 ```
 
 Variáveis opcionais importantes:
@@ -190,33 +195,36 @@ Variáveis opcionais importantes:
 | `OCR_LANGUAGE` | `por` | Idioma utilizado pelo Tesseract |
 | `OCR_DPI` | `300` | Resolução usada para renderizar páginas antes do OCR |
 | `NATIVE_TEXT_MIN_CHARS` | `80` | Limiar por página antes de acionar OCR |
-| `LLM_BASIC_MODEL` | `gemini-3.5-flash-lite` | Modelo de primeira escalada |
-| `LLM_STRONG_MODEL` | `gemini-3.8-flash` | Modelo usado na última tentativa |
-| `ENABLE_BASIC_LLM_FALLBACK` | `true` | Habilita a primeira escalada com IA |
-| `ENABLE_STRONG_LLM_FALLBACK` | `true` | Habilita a última escalada com IA |
+| `LLM_BASIC_MODEL` | `gemini-3.5-flash-lite` | Agente principal para todos os PDFs |
+| `LLM_STRONG_MODEL` | `gemini-3.8-flash` | Agente de escalonamento com tools |
+| `DATABASE_URL` | PostgreSQL local | Persistência dos artefatos JSON em JSONB |
 | `BACKEND_PORT` | `8000` | Porta da API no host |
 | `FRONTEND_PORT` | `5173` | Porta da interface no host |
 | `LOG_LEVEL` | `INFO` | Nível dos logs estruturados do backend |
 
 Não faça commit do `.env`; ele está ignorado pelo Git.
 
-Sem uma chave do Gemini, a extração Python continua disponível. Documentos que
-não puderem ser resolvidos localmente são encaminhados para revisão humana.
+Sem uma chave do Gemini, ou quando todas as tentativas de IA falham por
+indisponibilidade do provider, a extração Python entra como contingência.
 
 ## Estratégia de extração em cascata
 
-O FinTrace evita chamar uma LLM quando os padrões explícitos do documento são
-suficientes. A ordem de execução é:
+Com uma chave configurada, a ordem de execução é:
 
-1. O extrator Python procura identificadores, eventos, datas, valores, impostos,
-   moedas e proporções, sempre preservando página e trecho de evidência;
-2. Um avaliador verifica os campos críticos esperados para o tipo do evento,
+1. O modelo básico analisa todo PDF e devolve uma estrutura tipada com evidências;
+2. Um avaliador verifica os campos materiais esperados para o tipo do evento,
    incluindo a data de aprovação;
-3. Se houver lacunas ou ambiguidades, o modelo básico interpreta o documento;
-4. Se o resultado continuar insuficiente, o modelo forte recebe o documento,
+3. Se houver lacunas ou ambiguidades, o modelo forte recebe o documento,
    as pendências e o resultado parcial das tentativas anteriores;
+4. O modelo forte pode consultar golden records e reler texto, tabelas ou
+   coordenadas do PDF por function calling;
 5. O resultado consolidado passa pelas regras determinísticas e, se ainda não
    for seguro, segue para revisão humana.
+
+Python não é executado depois de uma resposta válida, porém incompleta, dos
+modelos: esse cenário representa incerteza real e segue para revisão. A
+contingência local é reservada à ausência de chave ou indisponibilidade das
+tentativas de IA.
 
 Uma tentativa posterior não sobrescreve silenciosamente uma informação
 divergente. A divergência é preservada como `CONFLICT`. Conflitos objetivos de
@@ -234,13 +242,13 @@ DPI. O backend gera duas versões para o Tesseract:
 - Versão binária com limiar calculado pelo método de Otsu.
 
 O texto das duas tentativas é pontuado pela quantidade de caracteres e palavras
-úteis, e a melhor resposta segue para a extração Python. Dessa forma, a LLM só é
-acionada depois que as alternativas locais de leitura e extração foram
-esgotadas.
+úteis, e a melhor resposta compõe o texto normalizado enviado ao agente. OCR e
+melhoria de imagem continuam locais para reduzir ruído e uso desnecessário de
+tokens, mas a interpretação principal é feita pela IA.
 
 ### Tool de validação da referência
 
-Quando uma LLM é acionada, o SDK disponibiliza a função
+No escalonamento para o modelo forte, o SDK disponibiliza a função
 `lookup_golden_record`. O modelo pode consultar emissor, CNPJ, ISIN, ticker e
 classe diretamente na base canônica. O retorno contém correspondências,
 conflitos e possíveis registros.
@@ -249,10 +257,8 @@ A consulta feita pelo agente não substitui a validação do pipeline: o backend
 repete o cruzamento depois da extração e permanece como autoridade final. Dados
 da referência nunca são apresentados como evidência extraída do documento.
 
-Consequentemente, um registro resolvido pela etapa Python é validado contra o
-`golden_records.csv`, mas não produz uma chamada de ferramenta da LLM. A
-function calling é uma capacidade da rota de escalonamento, enquanto a
-validação determinística do pipeline é obrigatória para todos os registros.
+A function calling é uma capacidade do agente forte; a validação determinística
+posterior continua obrigatória para todos os registros.
 
 ### Tools de leitura com pdfplumber
 
@@ -284,7 +290,7 @@ executados deterministicamente pelo backend antes da chamada ao agente.
 
 ## Execução com Docker
 
-Construa e inicie os dois serviços:
+Construa e inicie frontend, backend e PostgreSQL:
 
 ```bash
 ./e_scripts/start.sh
@@ -308,11 +314,13 @@ Remova containers e a rede da aplicação:
 ./e_scripts/remove.sh
 ```
 
-Esses scripts nunca apagam `a_data/a_input`, `a_data/b_output` ou os golden
-records. Os diretórios de dados são montados diretamente a partir do host.
+Esses scripts nunca apagam `a_data/a_input`, `a_data/b_output`, os golden
+records nem o volume `fintrace_postgres_data`. Os diretórios de arquivos ficam
+montados a partir do host e os registros do banco sobrevivem à recriação dos
+containers.
 
-O script valida o Docker, constrói os dois serviços, aguarda o backend ficar
-saudável e só termina quando o frontend também está em execução. O comando
+O script valida o Docker, inicia o banco, constrói as aplicações, aguarda o
+backend ficar saudável e só termina quando o frontend também está em execução. O comando
 Docker equivalente é:
 
 ```bash
@@ -332,7 +340,9 @@ uvicorn src.main:app --reload
 ```
 
 O Tesseract e o pacote do idioma português precisam estar instalados no host
-para processar PDFs escaneados fora do Docker.
+para processar PDFs escaneados fora do Docker. O backend local também requer um
+PostgreSQL acessível pela `DATABASE_URL`; a execução via Compose configura isso
+automaticamente.
 
 Frontend:
 
@@ -441,39 +451,26 @@ Cada lote também atualiza:
 a_data/b_output/exception_report.json
 ```
 
+O mesmo payload de cada JSON é inserido como uma nova linha na tabela
+`processing_artifacts`, usando `JSONB`. A persistência é append-only: novos
+processamentos do mesmo documento preservam o histórico, enquanto os arquivos
+continuam sendo gerados para compor o entregável do case.
+
 O JSON gerado utiliza o schema `1.0`. Valores decimais são representados como
 strings e datas seguem ISO 8601. Consulte o
 [contrato de saída](f_docs/b_architecture/output-contract.md) completo.
 
-### Resultado de referência do lote fornecido
+### Geração do lote entregável
 
-A execução validada do lote de oito documentos no ambiente Docker, com OCR em
-português disponível, produziu o seguinte resultado de referência:
-
-| Documento | Resultado | Motivo quando não aceito automaticamente |
-|---|---|---|
-| `01_energetica_vale_tiete_dividendo.pdf` | `ACCEPTED` | — |
-| `02_banco_meridional_jcp.pdf` | `ACCEPTED` | — |
-| `03_siderurgica_paranaense_proventos.pdf` | `ACCEPTED` | — |
-| `04_rede_varejo_jcp_sem_data.pdf` | `PENDING_INFORMATION` | Pagamento ainda não divulgado pelo emissor |
-| `05_aurora_saneamento_dividendo_datas.pdf` | `REVIEW_REQUIRED` | Pagamento anterior à data-base |
-| `06_petroquimica_litoral_grupamento.pdf` | `ACCEPTED` | — |
-| `07_telecom_norte_jcp_SCAN.pdf` | `ACCEPTED` | Extraído por OCR |
-| `08_construtora_horizonte_bonificacao.pdf` | `REVIEW_REQUIRED` | Ativo não confirmado na base de referência |
-
-Resumo: **8 processados, 5 aceitos, 2 para revisão humana, 1 pendência de
-negócio e 0 falhas técnicas**. Todos foram resolvidos pela camada Python; por
-isso, o lote não consumiu chamadas de LLM. Isso é comportamento esperado da
-cascata, não ausência da integração com IA.
-
-Cada nova execução persiste os JSONs individuais e substitui
-`exception_report.json` pelo relatório do lote processado naquela chamada. Antes
-da entrega, `a_data/b_output` deve conter somente os oito JSONs canônicos acima
-e o respectivo relatório consolidado, sem artefatos de execuções anteriores.
+Depois de configurar a chave e iniciar os serviços, processe uma única vez os
+oito PDFs canônicos. Antes da entrega, `a_data/b_output` deve conter exatamente
+os oito JSONs individuais e `exception_report.json`, sem artefatos de execuções
+anteriores. O relatório é substituído a cada lote; o histórico completo permanece
+no PostgreSQL.
 
 ## Confiança e status dos campos
 
-A confiança é categórica, evitando percentuais de precisão inexistente:
+A confiança de cada campo permanece categórica:
 
 - `HIGH`: evidência nativa explícita, enriquecimento por referência exata,
   derivação aprovada por todas as regras, campo não aplicável ou ausência
@@ -487,6 +484,13 @@ A confiança é categórica, evitando percentuais de precisão inexistente:
 Esses critérios aparecem na aba `Dados extraídos`, antes da lista de campos. A
 justificativa específica de cada valor permanece disponível ao expandir sua
 linha.
+
+O documento também recebe `document_confidence.score`, entre 0 e 100. Esse valor
+não é uma probabilidade estatística da LLM: é um indicador determinístico de
+cobertura e qualidade dos campos materiais. Campo resolvido com confiança alta
+vale 100 pontos, média vale 80, baixa vale 40 e campo ausente vale zero. O JSON
+preserva ainda a porcentagem de completude e as listas de campos esperados,
+resolvidos e ausentes. Score inferior a 75 encaminha o documento para revisão.
 
 O status explica o que aconteceu com o campo independentemente da confiança.
 Alguns exemplos são `EXTRACTED`, `REFERENCE_ENRICHED`, `DERIVED`,
@@ -584,17 +588,17 @@ um mock, e as regras determinísticas são testadas isoladamente.
   reduz superfície de ataque e uso de evidência fora do documento atual.
 - **Sem vector database:** cada aviso é processado individualmente; não há um
   grande corpus que exija recuperação semântica.
-- **Sem banco relacional:** persistência em filesystem é suficiente para o fluxo
-  atual, local e de um único operador.
+- **Filesystem e PostgreSQL em paralelo:** os arquivos atendem diretamente ao
+  entregável e facilitam inspeção; o JSONB acrescenta histórico e capacidade de
+  consulta. O custo é exigir um terceiro serviço no ambiente local.
 - **Sem fila de tarefas:** o processamento é síncrono no MVP. Uma fila passa a
   ser justificável com usuários concorrentes, jobs longos, retries ou necessidade
   de retomada.
 - **Sem LangChain:** o SDK do provider e a orquestração explícita em Python
   mantêm o fluxo de controle visível.
-- **Sem percentuais artificiais de confiança:** são usados níveis categóricos
-  `HIGH`, `MEDIUM` e `LOW`, derivados de origem, método de extração, status e
-  validações. Não existe conjunto calibrado que sustente uma probabilidade
-  numérica confiável.
+- **Score numérico não probabilístico:** os campos usam `HIGH`, `MEDIUM` e `LOW`;
+  o percentual do documento resume cobertura e qualidade por uma fórmula
+  explícita. Ele não deve ser interpretado como probabilidade calibrada de acerto.
 - **Sem retentativa automática ilimitada de LLM:** há no máximo uma chamada ao
   modelo básico e uma ao forte. Repetir indefinidamente elevaria custo e poderia
   mascarar ambiguidade real em vez de encaminhá-la para uma pessoa.
@@ -610,7 +614,7 @@ um mock, e as regras determinísticas são testadas isoladamente.
 
 - Avaliar novos providers e calibrar a cascata com métricas reais de qualidade,
   custo e latência;
-- Adicionar fila assíncrona e histórico persistente de processamento;
+- Adicionar fila assíncrona e consultas operacionais sobre o histórico;
 - Implementar autenticação, autorização e isolamento por cliente;
 - Capturar correções do operador como feedback auditável;
 - Construir datasets de regressão e painéis de qualidade da extração;

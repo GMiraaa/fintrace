@@ -195,6 +195,13 @@ h1 { font-size: clamp(2.25rem, 4.5vw, 3.875rem); font-weight: 610; letter-spacin
 .decision-panel__content > span { color: var(--muted); font-size: 0.625rem; }
 .decision-panel h4 { font-size: 1.25rem; margin: 2px 0 0; }
 .decision-panel p { color: var(--muted); font-size: 0.75rem; line-height: 1.5; margin: 7px 0 0; }
+.document-confidence { background: rgba(255, 255, 255, .72); border: 1px solid rgba(7, 89, 173, .16); display: grid; gap: 8px 14px; grid-template-columns: auto minmax(120px, 1fr); margin-top: 14px; padding: 12px 14px; }
+.document-confidence > div { display: flex; flex-direction: column; grid-row: 1 / 3; }
+.document-confidence strong { color: var(--blue-dark); font-size: 1.375rem; line-height: 1; }
+.document-confidence span, .document-confidence small { color: var(--muted); font-size: 0.625rem; }
+.document-confidence span { margin-top: 4px; }
+.document-confidence progress { accent-color: var(--blue); align-self: end; height: 9px; width: 100%; }
+.document-confidence small { line-height: 1.4; }
 .decision-panel ul { margin: 10px 0 0; padding-left: 17px; }
 .decision-panel li { color: #5f4b31; font-size: 0.6875rem; line-height: 1.45; margin-top: 4px; }
 .document-metadata { border-left: 1px solid #cedbd8; margin: 0; padding-left: 18px; }

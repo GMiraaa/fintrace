@@ -25,9 +25,8 @@ class AppSettings:
     llm_provider: str
     llm_basic_model: str
     llm_strong_model: str
-    enable_basic_llm_fallback: bool
-    enable_strong_llm_fallback: bool
     gemini_api_key: str
+    database_url: str
 
     @property
     def llm_model(self) -> str:
@@ -83,13 +82,11 @@ class AppSettings:
             llm_strong_model=os.getenv(
                 "LLM_STRONG_MODEL", "gemini-3.8-flash"
             ),
-            enable_basic_llm_fallback=_boolean(
-                "ENABLE_BASIC_LLM_FALLBACK", True
-            ),
-            enable_strong_llm_fallback=_boolean(
-                "ENABLE_STRONG_LLM_FALLBACK", True
-            ),
             gemini_api_key=os.getenv("GEMINI_API_KEY", ""),
+            database_url=os.getenv(
+                "DATABASE_URL",
+                "postgresql://fintrace:fintrace@localhost:5432/fintrace",
+            ),
         )
 
 
@@ -110,15 +107,3 @@ def _non_negative_int(name: str, default: int) -> int:
     if value < 0:
         raise ValueError(f"{name} must be non-negative")
     return value
-
-
-def _boolean(name: str, default: bool) -> bool:
-    raw = os.getenv(name)
-    if raw is None:
-        return default
-    value = raw.strip().lower()
-    if value in {"1", "true", "yes", "on"}:
-        return True
-    if value in {"0", "false", "no", "off"}:
-        return False
-    raise ValueError(f"{name} must be a boolean")

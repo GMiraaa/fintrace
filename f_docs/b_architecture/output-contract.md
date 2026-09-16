@@ -169,20 +169,50 @@ o JSON persistido.
   },
   "extraction_attempts": [
     {
-      "strategy": "PYTHON",
+      "strategy": "BASIC_LLM",
       "outcome": "INSUFFICIENT",
-      "model": null,
+      "model": "gemini-3.5-flash-lite",
       "unresolved_fields": ["corporate_action.event_type"],
       "error": null
     },
     {
-      "strategy": "BASIC_LLM",
+      "strategy": "STRONG_LLM",
       "outcome": "SUFFICIENT",
-      "model": "gemini-3.5-flash-lite",
+      "model": "gemini-3.8-flash",
       "unresolved_fields": [],
       "error": null
     }
   ],
+  "document_confidence": {
+    "score": 88,
+    "completion_percentage": 100,
+    "required_fields": [
+      "issuer.name",
+      "security.isin",
+      "security.ticker",
+      "corporate_action.event_type",
+      "corporate_action.dates.approval_date",
+      "corporate_action.dates.record_date",
+      "corporate_action.dates.ex_date",
+      "corporate_action.dates.payment_date",
+      "corporate_action.financials.gross_amount_per_share",
+      "corporate_action.financials.currency"
+    ],
+    "resolved_fields": [
+      "issuer.name",
+      "security.isin",
+      "security.ticker",
+      "corporate_action.event_type",
+      "corporate_action.dates.approval_date",
+      "corporate_action.dates.record_date",
+      "corporate_action.dates.ex_date",
+      "corporate_action.dates.payment_date",
+      "corporate_action.financials.gross_amount_per_share",
+      "corporate_action.financials.currency"
+    ],
+    "missing_fields": [],
+    "rationale": "2 de 2 campos materiais foram resolvidos..."
+  },
   "reference_validation": {
     "exact_match": false,
     "matched_by": [],
@@ -216,6 +246,16 @@ depende do campo:
 executadas não aparecem. Uma tentativa com `ERROR` registra uma mensagem
 técnica e permite que a próxima estratégia seja tentada; os campos já extraídos
 continuam preservados.
+
+`document_confidence` resume a cobertura dos campos materiais. O `score` usa a
+escala determinística alta = 100, média = 80, baixa = 40 e ausente = 0. A
+`completion_percentage` considera apenas presença ou ausência. As listas tornam
+o cálculo auditável e um score abaixo de 75 exige revisão humana. O percentual
+não representa uma probabilidade estatística produzida pela LLM.
+
+Com chave configurada, `BASIC_LLM` é sempre a primeira tentativa. `STRONG_LLM`
+entra quando restam campos materiais e possui as function callings. `PYTHON`
+só aparece sem chave ou após indisponibilidade de todas as tentativas de IA.
 
 ```json
 {
@@ -296,6 +336,7 @@ contrato para auditoria da seguinte forma:
 | O que foi extraído | `value` e `status` |
 | De onde veio | `origin`, `sources.page`, `sources.evidence` e `extraction_method` |
 | Quão confiável é | `confidence` e justificativa derivada dos metadados do campo |
+| Qual a cobertura geral | `document_confidence.score`, completude e campos ausentes |
 | Como foi validado | `validation`, `expected`, `observed` e `reference_validation` |
 | O que exige atuação | `processing_status`, `review`, `follow_up` e `exceptions` |
 | Como a cascata se comportou | `extraction_attempts` |
@@ -308,6 +349,11 @@ O botão de visualização usa o `document_id` para consultar
 `GET /api/documents/{document_id}/file`. Essa rota é complementar ao contrato:
 o JSON permanece suficiente para a auditoria cotidiana, enquanto o PDF fica
 disponível para investigação ou conferência visual.
+
+Cada JSON escrito no filesystem também é inserido integralmente em JSONB na
+tabela `processing_artifacts`. As colunas `artifact_type`, `file_name`,
+`document_id`, `processing_status` e `created_at` permitem consultas sem
+desmontar o payload. Cada nova execução cria uma linha e preserva o histórico.
 
 ## Códigos de validação
 

@@ -33,7 +33,7 @@ e mantém textos explicativos abaixo de 80 caracteres.
 
 ```text
 ┌───────────────────────────────────────────────────────────┐
-│ FinTrace                     ambiente + estado do sistema │
+│ FinTrace          tamanho do texto + ambiente + sistema │
 ├──────────────────────┬────────────────────────────────────┤
 │ envio dos PDFs       │ ler → confirmar → verificar → agir  │
 │ arquivos selecionados│ explicação simples de cada etapa    │
@@ -50,7 +50,7 @@ e mantém textos explicativos abaixo de 80 caracteres.
 ```mermaid
 flowchart TD
     APP[App<br/>Estado do lote e integração com API]
-    APP --> TOP[Topbar<br/>Marca, ambiente e estado do sistema]
+    APP --> TOP[Topbar<br/>Marca, tamanho do texto, ambiente e sistema]
     APP --> UP[UploadPanel<br/>Seleção, fila e processamento]
     APP --> TRACE[TracePreview<br/>Etapas do pipeline]
     APP --> RESULTS[ResultsWorkspace<br/>Resumo e seleção de documento]
@@ -105,6 +105,7 @@ Para cada documento, o painel de resultados torna visíveis:
 
 - O valor, o status e a origem de cada campo;
 - A confiança categórica e a justificativa dessa confiança;
+- O score agregado de 0 a 100, a completude e os campos materiais ausentes;
 - Os critérios objetivos dos três níveis de confiança, incluindo o efeito do OCR;
 - O trecho literal, a página e o método de extração;
 - As regras associadas, incluindo valor esperado e observado;

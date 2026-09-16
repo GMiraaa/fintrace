@@ -13,7 +13,11 @@ from src.models.enums import (
 from src.models.schemas import ExtractionAttempt
 
 from .base import CorporateActionAgent
-from .gemini import AgentProviderError
+from .gemini import (
+    AgentProviderError,
+    AgentProviderUnavailableError,
+    AgentStructuredOutputError,
+)
 from .schemas import AgentExtraction, ExtractedField
 
 UNRESOLVED_STATUSES = {
@@ -31,7 +35,7 @@ class ExtractionRun:
 
 
 class CascadingCorporateActionExtractor:
-    """Escalona a extração somente enquanto faltarem campos críticos."""
+    """Prioriza IA e usa Python somente como contingência operacional."""
 
     def __init__(
         self,
@@ -45,45 +49,80 @@ class CascadingCorporateActionExtractor:
         self.strong_agent = strong_agent
 
     def extract(self, document: NormalizedDocument) -> ExtractionRun:
-        extraction = self.python_extractor.extract(document)
-        attempts = [
-            _attempt(
-                ExtractionStrategy.PYTHON,
-                extraction,
-                model=None,
+        agents = [
+            (strategy, agent)
+            for strategy, agent in (
+                (ExtractionStrategy.BASIC_LLM, self.basic_agent),
+                (ExtractionStrategy.STRONG_LLM, self.strong_agent),
             )
+            if agent is not None
         ]
-        if not attempts[-1].unresolved_fields:
-            return ExtractionRun(extraction=extraction, attempts=attempts)
+        if not agents:
+            return self._extract_with_python(document, attempts=[])
 
-        for strategy, agent in (
-            (ExtractionStrategy.BASIC_LLM, self.basic_agent),
-            (ExtractionStrategy.STRONG_LLM, self.strong_agent),
-        ):
-            if agent is None:
-                continue
+        extraction = AgentExtraction()
+        attempts: list[ExtractionAttempt] = []
+        provider_unavailable_for_all_attempts = True
+        for strategy, agent in agents:
             model = getattr(agent, "model", None)
             try:
-                candidate = _extract_with_context(
-                    agent,
-                    document,
-                    current=extraction,
+                candidate = (
+                    agent.extract(document)
+                    if not attempts
+                    else _extract_with_context(
+                        agent,
+                        document,
+                        current=extraction,
+                    )
                 )
                 extraction = merge_extractions(extraction, candidate)
                 current_attempt = _attempt(strategy, extraction, model=model)
-            except AgentProviderError as exc:
-                current_attempt = ExtractionAttempt(
-                    strategy=strategy,
-                    outcome=ExtractionAttemptOutcome.ERROR,
+                provider_unavailable_for_all_attempts = False
+            except AgentStructuredOutputError as exc:
+                provider_unavailable_for_all_attempts = False
+                current_attempt = _failed_attempt(
+                    strategy,
+                    extraction,
                     model=model,
-                    unresolved_fields=assess_unresolved_fields(extraction),
+                    error=str(exc),
+                )
+            except AgentProviderUnavailableError as exc:
+                current_attempt = _failed_attempt(
+                    strategy,
+                    extraction,
+                    model=model,
+                    error=str(exc),
+                )
+            except AgentProviderError as exc:
+                provider_unavailable_for_all_attempts = False
+                current_attempt = _failed_attempt(
+                    strategy,
+                    extraction,
+                    model=model,
                     error=str(exc),
                 )
             attempts.append(current_attempt)
             if not current_attempt.unresolved_fields:
                 break
 
+        if provider_unavailable_for_all_attempts:
+            return self._extract_with_python(document, attempts=attempts)
         return ExtractionRun(extraction=extraction, attempts=attempts)
+
+    def _extract_with_python(
+        self,
+        document: NormalizedDocument,
+        *,
+        attempts: list[ExtractionAttempt],
+    ) -> ExtractionRun:
+        extraction = self.python_extractor.extract(document)
+        return ExtractionRun(
+            extraction=extraction,
+            attempts=[
+                *attempts,
+                _attempt(ExtractionStrategy.PYTHON, extraction, model=None),
+            ],
+        )
 
 
 def assess_unresolved_fields(extraction: AgentExtraction) -> list[str]:
@@ -92,29 +131,27 @@ def assess_unresolved_fields(extraction: AgentExtraction) -> list[str]:
 
     for path in (
         "issuer.name",
+        "security.isin",
+        "security.ticker",
         "corporate_action.event_type",
         "corporate_action.dates.approval_date",
     ):
         if not _is_resolved(fields[path]):
             unresolved.append(path)
 
-    if not any(
-        _is_resolved(fields[path])
-        for path in ("security.isin", "security.ticker")
-    ):
-        unresolved.append("security.isin_or_ticker")
-
     event_type = extraction.corporate_action.event_type.value
     required_by_event = {
         EventType.DIVIDEND: (
             "corporate_action.dates.record_date",
             "corporate_action.dates.ex_date",
+            "corporate_action.dates.payment_date",
             "corporate_action.financials.gross_amount_per_share",
             "corporate_action.financials.currency",
         ),
         EventType.JCP: (
             "corporate_action.dates.record_date",
             "corporate_action.dates.ex_date",
+            "corporate_action.dates.payment_date",
             "corporate_action.financials.gross_amount_per_share",
             "corporate_action.financials.currency",
         ),
@@ -194,6 +231,22 @@ def _attempt(
         ),
         model=model,
         unresolved_fields=unresolved,
+    )
+
+
+def _failed_attempt(
+    strategy: ExtractionStrategy,
+    extraction: AgentExtraction,
+    *,
+    model: str | None,
+    error: str,
+) -> ExtractionAttempt:
+    return ExtractionAttempt(
+        strategy=strategy,
+        outcome=ExtractionAttemptOutcome.ERROR,
+        model=model,
+        unresolved_fields=assess_unresolved_fields(extraction),
+        error=error,
     )
 
 

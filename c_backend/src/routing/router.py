@@ -1,3 +1,4 @@
+from src.confidence import calculate_document_confidence
 from src.models.enums import (
     ConfidenceLevel,
     EventType,
@@ -11,6 +12,8 @@ from src.models.schemas import DocumentRecord, RoutingReason
 
 
 def route_for_review(record: DocumentRecord) -> DocumentRecord:
+    if not record.document_confidence.required_fields:
+        record.document_confidence = calculate_document_confidence(record)
     review_reasons: list[RoutingReason] = []
     follow_up_reasons: list[RoutingReason] = []
 
@@ -42,6 +45,18 @@ def route_for_review(record: DocumentRecord) -> DocumentRecord:
                 "TITLE_BODY_CLASSIFICATION_CONFLICT",
                 ExceptionCategory.REVIEW_EXCEPTION,
                 "Material classification evidence is contradictory.",
+            )
+        )
+
+    if record.document_confidence.score < 75:
+        review_reasons.append(
+            _reason(
+                "DOCUMENT_CONFIDENCE_LOW",
+                ExceptionCategory.REVIEW_EXCEPTION,
+                (
+                    "Document confidence is below 75%: "
+                    f"{record.document_confidence.score}%."
+                ),
             )
         )
 
@@ -131,6 +146,7 @@ def _critical_fields(record: DocumentRecord) -> list[tuple]:
         ("security.isin", record.security.isin),
         ("security.ticker", record.security.ticker),
         ("corporate_action.event_type", record.corporate_action.event_type),
+        ("dates.approval_date", record.corporate_action.dates.approval_date),
         ("dates.record_date", record.corporate_action.dates.record_date),
         ("dates.ex_date", record.corporate_action.dates.ex_date),
     ]

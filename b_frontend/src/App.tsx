@@ -40,6 +40,7 @@ function App() {
       provider: '',
       provider_configured: false,
       golden_records_available: false,
+      database_configured: false,
     }))
   }, [])
 

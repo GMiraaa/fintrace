@@ -161,6 +161,14 @@ export interface DocumentRecord {
   }
   corporate_action: CorporateAction
   extraction_attempts: ExtractionAttempt[]
+  document_confidence: {
+    score: number
+    completion_percentage: number
+    required_fields: string[]
+    resolved_fields: string[]
+    missing_fields: string[]
+    rationale: string
+  }
   reference_validation: ReferenceValidation
   validations: ValidationResult[]
   review: { required: boolean; reasons: RoutingReason[] }
@@ -172,6 +180,7 @@ export interface ExceptionReportDocument {
   document_id: string
   file_name: string
   processing_status: ProcessingStatus
+  confidence_score: number | null
   exceptions: RoutingReason[]
 }
 
@@ -197,4 +206,5 @@ export interface HealthResponse {
   provider: string
   provider_configured: boolean
   golden_records_available: boolean
+  database_configured: boolean
 }

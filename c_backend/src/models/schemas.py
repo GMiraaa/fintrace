@@ -197,6 +197,15 @@ class FollowUpDecision(StrictModel):
     reasons: list[RoutingReason] = Field(default_factory=list)
 
 
+class DocumentConfidence(StrictModel):
+    score: int = Field(default=0, ge=0, le=100)
+    completion_percentage: int = Field(default=0, ge=0, le=100)
+    required_fields: list[str] = Field(default_factory=list)
+    resolved_fields: list[str] = Field(default_factory=list)
+    missing_fields: list[str] = Field(default_factory=list)
+    rationale: str = Field(default="Confiança ainda não calculada.", min_length=1)
+
+
 class DocumentRecord(StrictModel):
     schema_version: str = Field(default="1.0", pattern=r"^1\.0$")
     document_id: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
@@ -206,6 +215,9 @@ class DocumentRecord(StrictModel):
     security: Security = Field(default_factory=Security)
     corporate_action: CorporateAction = Field(default_factory=CorporateAction)
     extraction_attempts: list[ExtractionAttempt] = Field(default_factory=list)
+    document_confidence: DocumentConfidence = Field(
+        default_factory=DocumentConfidence
+    )
     reference_validation: ReferenceValidation = Field(
         default_factory=ReferenceValidation
     )
@@ -227,6 +239,7 @@ class ExceptionReportDocument(StrictModel):
     document_id: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
     file_name: str = Field(min_length=1)
     processing_status: ProcessingStatus
+    confidence_score: int | None = Field(default=None, ge=0, le=100)
     exceptions: list[RoutingReason] = Field(default_factory=list)
 
 
