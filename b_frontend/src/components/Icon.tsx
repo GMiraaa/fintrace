@@ -1,5 +1,14 @@
-export function Icon({ name, size = 20 }) {
-  const paths = {
+import type { ReactNode } from 'react'
+
+export type IconName = 'upload' | 'file' | 'check' | 'alert' | 'close' | 'eye' | 'download' | 'shield' | 'database'
+
+interface IconProps {
+  name: IconName
+  size?: number
+}
+
+export function Icon({ name, size = 20 }: IconProps) {
+  const paths: Record<IconName, ReactNode> = {
     upload: <path d="M12 16V4m0 0L7 9m5-5 5 5M5 15v4h14v-4" />,
     file: <path d="M6 2h8l4 4v16H6V2Zm8 0v5h5M9 12h6M9 16h6" />,
     check: <path d="m5 12 4 4L19 6" />,

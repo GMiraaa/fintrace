@@ -60,7 +60,8 @@ flowchart TD
     DETAIL --> OVERVIEW[Visão geral<br/>Controles e base oficial]
     DETAIL --> DATA[Dados extraídos<br/>Valor, confiança e evidência]
     DETAIL --> HISTORY[Histórico da análise<br/>Tentativas e regras]
-    DETAIL --> PDF[Visualizador do PDF<br/>Endpoint por hash]
+    DETAIL --> PREVIEW[Miniatura permanente<br/>Primeira página]
+    DETAIL --> PDF[Visualizador completo<br/>Endpoint por hash]
     DETAIL --> REF[Validação canônica<br/>Esperado e observado]
     UP --> ICON[Icon]
     TRACE --> ICON
@@ -69,16 +70,18 @@ flowchart TD
     DETAIL --> CONST[Labels e formatadores compartilhados]
 ```
 
-`App.jsx` concentra apenas estado e orquestração. Componentes visuais não
+`App.tsx` concentra apenas estado e orquestração. Componentes visuais não
 conhecem regras financeiras: recebem o contrato produzido pelo serviço e o
-representam. Rótulos de domínio ficam em `constants.js`, enquanto conversões de
-apresentação ficam em `utils/formatters.js`. Essa separação reduz o acoplamento
+representam. O contrato é espelhado em `types.ts` e verificado com TypeScript em
+modo estrito. Rótulos de domínio ficam em `constants.ts`, enquanto conversões de
+apresentação ficam em `utils/formatters.ts`. Essa separação reduz o acoplamento
 da tela e permite evoluir detalhes, upload e navegação independentemente.
 
 O PDF é servido por um endpoint que recebe o `document_id` baseado em SHA-256.
 O serviço não aceita nomes nem caminhos fornecidos pelo navegador: procura no
 diretório de entrada apenas o arquivo cujo conteúdo possui aquele hash. O
-visualizador embutido é uma conveniência de auditoria; o registro continua
+detalhe mantém uma miniatura da primeira página e oferece um visualizador
+completo por ação do operador. Ambos são conveniências de auditoria; o registro continua
 contendo evidência suficiente para análise sem depender da releitura integral.
 
 ## Modelo de navegação
@@ -102,6 +105,7 @@ Para cada documento, o painel de resultados torna visíveis:
 
 - O valor, o status e a origem de cada campo;
 - A confiança categórica e a justificativa dessa confiança;
+- Os critérios objetivos dos três níveis de confiança, incluindo o efeito do OCR;
 - O trecho literal, a página e o método de extração;
 - As regras associadas, incluindo valor esperado e observado;
 - O registro canônico usado e eventuais conflitos ou possíveis correspondências;
@@ -136,5 +140,6 @@ prioridade e as abas separam conferência cotidiana de investigação técnica.
 O azul-marinho reforça o contexto bancário sem transformar todos os estados em
 azul; revisão, falha e aceite preservam semântica própria. Foram removidos
 rótulos decorativos em caixa alta, códigos internos e textos em inglês. O
-visualizador de PDF permanece sob demanda para não competir com a trilha
-auditável nem carregar todos os documentos antecipadamente.
+a miniatura é carregada apenas para o documento selecionado, e o visualizador
+completo permanece sob demanda para não competir com a trilha auditável nem
+carregar todos os documentos antecipadamente.

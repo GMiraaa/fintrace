@@ -4,7 +4,11 @@ import '@fontsource-variable/ibm-plex-sans'
 import App from './App'
 import './styles.css'
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+const root = document.getElementById('root')
+
+if (!root) throw new Error('Elemento raiz da aplicação não encontrado.')
+
+ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>,

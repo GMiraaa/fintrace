@@ -1,10 +1,29 @@
 import { useRef } from 'react'
+import type { ChangeEvent, DragEvent } from 'react'
 
 import { formatBytes } from '../utils/formatters'
 import { Icon } from './Icon'
 
-export function UploadPanel({ error, files, onAddFiles, onProcess, onRemoveFile, state }) {
-  const inputRef = useRef(null)
+interface UploadPanelProps {
+  error: string
+  files: File[]
+  onAddFiles: (files: FileList) => void
+  onProcess: () => void
+  onRemoveFile: (index: number) => void
+  state: 'idle' | 'processing' | 'done' | 'error'
+}
+
+export function UploadPanel({ error, files, onAddFiles, onProcess, onRemoveFile, state }: UploadPanelProps) {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault()
+    onAddFiles(event.dataTransfer.files)
+  }
+
+  function handleChange(event: ChangeEvent<HTMLInputElement>) {
+    if (event.target.files) onAddFiles(event.target.files)
+  }
 
   return (
     <div className="intro-panel">
@@ -14,8 +33,8 @@ export function UploadPanel({ error, files, onAddFiles, onProcess, onRemoveFile,
         Envie um ou mais PDFs. O FinTrace extrai os dados, confere o ativo e
         destaca somente o que precisa da sua atenção.
       </p>
-      <div className="drop-zone" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); onAddFiles(event.dataTransfer.files) }}>
-        <input ref={inputRef} accept="application/pdf,.pdf" id="pdf-input" multiple onChange={(event) => onAddFiles(event.target.files)} type="file" />
+      <div className="drop-zone" onDragOver={(event) => event.preventDefault()} onDrop={handleDrop}>
+        <input ref={inputRef} accept="application/pdf,.pdf" id="pdf-input" multiple onChange={handleChange} type="file" />
         <Icon name="upload" size={24} />
         <div><strong>Solte os arquivos PDF aqui</strong><span>Até 20 MB por documento</span></div>
         <button className="text-button" onClick={() => inputRef.current?.click()} type="button">Selecionar PDFs</button>

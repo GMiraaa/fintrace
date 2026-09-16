@@ -19,19 +19,44 @@ import {
   VALIDATION_STATUS_LABELS,
 } from '../constants'
 import { formatValue } from '../utils/formatters'
+import { DocumentThumbnail } from './DocumentThumbnail'
 import { Icon } from './Icon'
+import type {
+  AuditableField,
+  ClassificationConflict,
+  ClassificationSignal,
+  CorporateAction,
+  DocumentRecord,
+  ExtractionMethod,
+  JsonValue,
+  ProcessingStatus,
+  RatioValue,
+  ReferenceValidation as ReferenceValidationType,
+  RoutingReason,
+  ValidationResult,
+  ValidationStatus,
+} from '../types'
 
 const DETAIL_TABS = [
   ['resumo', 'Visão geral'],
   ['dados', 'Dados extraídos'],
   ['historico', 'Histórico da análise'],
-]
+] as const
 
-export function RecordDetail({ record }) {
-  const [activeTab, setActiveTab] = useState('resumo')
+type DetailTab = (typeof DETAIL_TABS)[number][0]
+type DisplayField = AuditableField<string | RatioValue>
+
+interface RecordDetailProps {
+  record: DocumentRecord
+}
+
+export function RecordDetail({ record }: RecordDetailProps) {
+  const [activeTab, setActiveTab] = useState<DetailTab>('resumo')
   const [showDocument, setShowDocument] = useState(false)
   const action = record.corporate_action
-  const eventType = EVENT_TYPE_LABELS[action.event_type.value] || 'Evento não identificado'
+  const eventType = action.event_type.value
+    ? EVENT_TYPE_LABELS[action.event_type.value] || 'Evento não identificado'
+    : 'Evento não identificado'
   const documentUrl = getDocumentFileUrl(record.document_id)
 
   useEffect(() => {
@@ -42,21 +67,22 @@ export function RecordDetail({ record }) {
   return (
     <article className="audit-record">
       <header className="record-header">
-        <div>
+        <div className="record-header__main">
           <StatusPill status={record.processing_status} />
           <h3>{record.issuer.name.value || 'Emissor não identificado'}</h3>
           <p>{eventType}<span aria-hidden="true">•</span>{record.security.ticker.value || 'Código não identificado'}<span aria-hidden="true">•</span>{record.security.isin.value || 'ISIN não identificado'}</p>
+          <div className="record-actions">
+            <button className="secondary-action" onClick={() => setShowDocument((current) => !current)} type="button">
+              <Icon name="eye" size={17} />
+              {showDocument ? 'Fechar documento' : 'Abrir visualizador'}
+            </button>
+            <button className="secondary-action" onClick={() => downloadRecord(record)} type="button">
+              <Icon name="download" size={17} />
+              Baixar dados em JSON
+            </button>
+          </div>
         </div>
-        <div className="record-actions">
-          <button className="secondary-action" onClick={() => setShowDocument((current) => !current)} type="button">
-            <Icon name="eye" size={17} />
-            {showDocument ? 'Fechar documento' : 'Ver documento original'}
-          </button>
-          <button className="secondary-action" onClick={() => downloadRecord(record)} type="button">
-            <Icon name="download" size={17} />
-            Baixar dados em JSON
-          </button>
-        </div>
+        <DocumentThumbnail fileName={record.source_document.file_name} onOpen={() => setShowDocument(true)} url={documentUrl} />
       </header>
 
       {showDocument && <DocumentViewer record={record} url={documentUrl} />}
@@ -84,7 +110,7 @@ export function RecordDetail({ record }) {
   )
 }
 
-function DocumentViewer({ record, url }) {
+function DocumentViewer({ record, url }: { record: DocumentRecord; url: string }) {
   return (
     <section className="document-viewer" aria-label="Documento original">
       <div className="document-viewer__heading">
@@ -96,7 +122,7 @@ function DocumentViewer({ record, url }) {
   )
 }
 
-function DecisionPanel({ record }) {
+function DecisionPanel({ record }: { record: DocumentRecord }) {
   const reasons = [...(record.review?.reasons || []), ...(record.follow_up?.reasons || [])]
   const accepted = record.processing_status === 'ACCEPTED'
   const title = accepted ? 'Registro pronto para uso' : STATUS_LABELS[record.processing_status]
@@ -126,7 +152,7 @@ function DecisionPanel({ record }) {
   )
 }
 
-function Overview({ record }) {
+function Overview({ record }: { record: DocumentRecord }) {
   const reference = record.reference_validation
   const attempts = record.extraction_attempts || []
   const failedRules = record.validations.filter((item) => item.status === 'FAIL')
@@ -141,7 +167,7 @@ function Overview({ record }) {
         <ControlItem
           detail={attempts.length ? attempts.map((attempt) => EXTRACTION_STRATEGY_LABELS[attempt.strategy] || attempt.strategy).join(' seguida de ') : 'Leitura concluída'}
           label="Leitura do documento"
-          ok={attempts.length ? attempts.at(-1).outcome === 'SUFFICIENT' : true}
+          ok={attempts.length ? attempts.at(-1)!.outcome === 'SUFFICIENT' : true}
         />
         <ControlItem
           detail={reference.exact_match ? `Identidade confirmada por ${reference.matched_by.map(matchFieldLabel).join(', ')}` : 'Não houve confirmação exata do ativo'}
@@ -161,9 +187,10 @@ function Overview({ record }) {
   )
 }
 
-function ExtractedData({ action, record }) {
+function ExtractedData({ action, record }: { action: CorporateAction; record: DocumentRecord }) {
   return (
     <div className="tab-content">
+      <ConfidenceGuide />
       <section className="reading-guide">
         <div><strong>Valor</strong><span>Informação estruturada pelo sistema.</span></div>
         <div><strong>Confiança</strong><span>Qualidade da evidência: alta, média ou baixa.</span></div>
@@ -187,7 +214,32 @@ function ExtractedData({ action, record }) {
   )
 }
 
-function AnalysisHistory({ record }) {
+function ConfidenceGuide() {
+  return (
+    <section className="confidence-guide" aria-labelledby="confidence-guide-title">
+      <div className="confidence-guide__intro">
+        <h4 id="confidence-guide-title">Como a confiança é definida</h4>
+        <p>A classificação não é uma porcentagem estimada. Ela segue regras objetivas sobre origem, leitura e validação.</p>
+      </div>
+      <div className="confidence-levels">
+        <article className="confidence-level confidence-level--high">
+          <strong>Confiança alta</strong>
+          <ul><li>Texto nativo com evidência literal;</li><li>Base oficial com correspondência exata;</li><li>Cálculo aprovado por todas as regras;</li><li>Dado não aplicável ou ausência declarada com evidência.</li></ul>
+        </article>
+        <article className="confidence-level confidence-level--medium">
+          <strong>Confiança média</strong>
+          <ul><li>Evidência obtida por OCR;</li><li>Base oficial sem correspondência exata;</li><li>Valor calculado sem todas as regras aprovadas;</li><li>Ausência declarada sem trecho literal.</li></ul>
+        </article>
+        <article className="confidence-level confidence-level--low">
+          <strong>Confiança baixa</strong>
+          <ul><li>Campo ambíguo, conflitante ou ilegível;</li><li>Origem desconhecida ou ausência de evidência;</li><li>Pelo menos uma regra relacionada foi reprovada.</li></ul>
+        </article>
+      </div>
+    </section>
+  )
+}
+
+function AnalysisHistory({ record }: { record: DocumentRecord }) {
   const attempts = record.extraction_attempts || []
   return (
     <div className="tab-content history-content">
@@ -219,7 +271,7 @@ function AnalysisHistory({ record }) {
   )
 }
 
-function ClassificationAudit({ evidence, conflicts }) {
+function ClassificationAudit({ evidence, conflicts }: { evidence: ClassificationSignal[]; conflicts: ClassificationConflict[] }) {
   if (!evidence.length && !conflicts.length) return null
   return (
     <details className="classification-audit">
@@ -238,7 +290,7 @@ function ClassificationAudit({ evidence, conflicts }) {
   )
 }
 
-function ClassificationSignal({ item }) {
+function ClassificationSignal({ item }: { item: ClassificationSignal }) {
   return (
     <article>
       <strong>Indica: {EVENT_TYPE_LABELS[item.supports] || item.supports}</strong>
@@ -248,7 +300,7 @@ function ClassificationSignal({ item }) {
   )
 }
 
-function ReferenceValidation({ reference }) {
+function ReferenceValidation({ reference }: { reference: ReferenceValidationType }) {
   const canonical = reference.reference_record
   return (
     <details className="reference-card" open={!reference.exact_match}>
@@ -274,11 +326,11 @@ function ReferenceValidation({ reference }) {
   )
 }
 
-function ReferenceValue({ label, value }) {
+function ReferenceValue({ label, value }: { label: string; value: string | null | undefined }) {
   return <div><dt>{label}</dt><dd>{value || 'Não informado'}</dd></div>
 }
 
-function FieldSection({ title, fields }) {
+function FieldSection({ title, fields }: { title: string; fields: Array<[string, DisplayField]> }) {
   const visible = fields.filter(([, field]) => field)
   return (
     <section className="field-section">
@@ -291,7 +343,7 @@ function FieldSection({ title, fields }) {
   )
 }
 
-function FieldRow({ label, field }) {
+function FieldRow({ label, field }: { label: string; field: DisplayField }) {
   return (
     <details className="field-row">
       <summary>
@@ -310,7 +362,7 @@ function FieldRow({ label, field }) {
   )
 }
 
-function ValidationRow({ validation, compact = false }) {
+function ValidationRow({ validation, compact = false }: { validation: ValidationResult; compact?: boolean }) {
   return (
     <div className={compact ? 'validation-row validation-row--compact' : 'validation-row'}>
       <ValidationState status={validation.status} />
@@ -325,20 +377,20 @@ function ValidationRow({ validation, compact = false }) {
   )
 }
 
-function ValidationState({ status }) {
+function ValidationState({ status }: { status: ValidationStatus }) {
   return <span className={`validation-state validation-state--${status.toLowerCase()}`}>{VALIDATION_STATUS_LABELS[status] || status}</span>
 }
 
-function ControlItem({ label, detail, ok, neutral = false }) {
+function ControlItem({ label, detail, ok, neutral = false }: { label: string; detail: string; ok: boolean; neutral?: boolean }) {
   const state = ok ? 'ok' : neutral ? 'neutral' : 'attention'
   return <div className={`control-item control-item--${state}`}><span>{ok ? <Icon name="check" size={15} /> : '!'}</span><div><strong>{label}</strong><small>{detail}</small></div></div>
 }
 
-function StatusPill({ status }) {
+function StatusPill({ status }: { status: ProcessingStatus }) {
   return <span className={`status-pill status-pill--${status.toLowerCase()}`}>{STATUS_LABELS[status] || status}</span>
 }
 
-function confidenceReason(field) {
+function confidenceReason(field: DisplayField): string {
   if (field.validation.some((validation) => validation.status === 'FAIL')) return 'Uma regra ligada a este campo foi reprovada. Confira o valor antes de utilizá-lo.'
   if (['AMBIGUOUS', 'CONFLICT', 'UNREADABLE', 'UNKNOWN'].includes(field.status)) return `A situação “${FIELD_STATUS_LABELS[field.status] || field.status}” impede o aceite automático.`
   if (field.status === 'NOT_DISCLOSED') return field.sources.length ? 'O próprio documento informa que o dado ainda não foi divulgado.' : 'O dado está pendente e não possui evidência literal associada.'
@@ -349,30 +401,30 @@ function confidenceReason(field) {
   return 'Não há evidência suficiente para aumentar a confiança deste campo.'
 }
 
-function reasonText(reason) {
+function reasonText(reason: RoutingReason): string {
   return REASON_LABELS[reason.code] || reason.message || 'O registro precisa de conferência.'
 }
 
-function methodLabel(method) {
+function methodLabel(method: ExtractionMethod): string {
   return EXTRACTION_METHOD_LABELS[method] || method
 }
 
-function matchFieldLabel(field) {
+function matchFieldLabel(field: string): string {
   return MATCH_FIELD_LABELS[field] || humanizeCode(field)
 }
 
-function fieldPathLabel(path) {
+function fieldPathLabel(path: string): string {
   return FIELD_PATH_LABELS[path] || humanizeCode(path.split('.').at(-1))
 }
 
-function humanizeCode(value) {
+function humanizeCode(value: unknown): string {
   return String(value || '').replaceAll('_', ' ').toLowerCase()
 }
 
-function formatPrimitive(value) {
+function formatPrimitive(value: JsonValue | undefined): string {
   if (value == null) return 'Não informado'
   if (typeof value === 'object') return JSON.stringify(value)
-  if (EVENT_TYPE_LABELS[value]) return EVENT_TYPE_LABELS[value]
+  if (typeof value === 'string' && EVENT_TYPE_LABELS[value]) return EVENT_TYPE_LABELS[value]
   if (/^\d{4}-\d{2}-\d{2}$/.test(String(value))) {
     const [year, month, day] = String(value).split('-')
     return `${day}/${month}/${year}`
@@ -384,7 +436,7 @@ function formatPrimitive(value) {
     .replace('ISO 4217 currency code', 'código de moeda no padrão ISO 4217')
 }
 
-function downloadRecord(record) {
+function downloadRecord(record: DocumentRecord) {
   const blob = new Blob([`${JSON.stringify(record, null, 2)}\n`], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')

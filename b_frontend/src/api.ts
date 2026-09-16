@@ -1,16 +1,18 @@
+import type { BatchUploadResponse, HealthResponse } from './types'
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
-export function getDocumentFileUrl(documentId) {
+export function getDocumentFileUrl(documentId: string): string {
   return `${API_BASE_URL}/api/documents/${encodeURIComponent(documentId)}/file`
 }
 
-export async function getHealth() {
+export async function getHealth(): Promise<HealthResponse> {
   const response = await fetch(`${API_BASE_URL}/api/health`)
   if (!response.ok) throw new Error('Não foi possível acessar o serviço de processamento.')
   return response.json()
 }
 
-export async function uploadDocuments(files) {
+export async function uploadDocuments(files: File[]): Promise<BatchUploadResponse> {
   const body = new FormData()
   files.forEach((file) => body.append('files', file))
 

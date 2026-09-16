@@ -68,9 +68,16 @@ A LLM participa somente da interpretação. Validações financeiras, temporais,
 de identidade, confiança e roteamento permanecem determinísticas, para que uma
 resposta probabilística nunca tenha autoridade final sobre o registro.
 
+Existem, portanto, duas formas distintas de uso das tools. Quando a cascata
+chega a uma LLM, o modelo pode consultar a referência e o PDF por function
+calling. Independentemente de a LLM ter sido acionada, todo registro passa
+obrigatoriamente pelas funções determinísticas de referência e coerência do
+pipeline antes de receber confiança e decisão operacional.
+
 ## Tecnologias e justificativas
 
-- **React + Vite:** mantém a interface operacional pequena e rápida.
+- **React + TypeScript + Vite:** mantém a interface operacional pequena e
+  rápida, com o contrato da API tipado em modo estrito.
 - **FastAPI:** fornece upload multipart tipado e documentação OpenAPI.
 - **Pydantic v2:** é a fonte de verdade dos contratos estruturados.
 - **PyMuPDF:** extrai texto nativo antes de qualquer tentativa de OCR.
@@ -95,7 +102,7 @@ documentos confidenciais em produção.
 
 ```mermaid
 flowchart LR
-    UI[React / Vite] -->|HTTP multipart e JSON| API[FastAPI]
+    UI[React / TypeScript / Vite] -->|HTTP multipart e JSON| API[FastAPI]
     API --> PIPE[Pipeline de processamento]
     PIPE --> DOC[Pré-processamento<br/>PyMuPDF, Pillow e Tesseract]
     PIPE --> CASCADE[Cascata de extração<br/>Python, Gemini básico e forte]
@@ -136,7 +143,7 @@ fintrace/
 │   ├── b_output/                 # JSONs e relatório de exceções
 │   └── c_golden_records/
 │       └── golden_records.csv
-├── b_frontend/                   # Interface React organizada por componentes
+├── b_frontend/                   # Interface React/TypeScript por componentes
 ├── c_backend/
 │   ├── src/
 │   │   ├── agent/                # Adaptador do provider e mapeamento da extração
@@ -241,6 +248,11 @@ conflitos e possíveis registros.
 A consulta feita pelo agente não substitui a validação do pipeline: o backend
 repete o cruzamento depois da extração e permanece como autoridade final. Dados
 da referência nunca são apresentados como evidência extraída do documento.
+
+Consequentemente, um registro resolvido pela etapa Python é validado contra o
+`golden_records.csv`, mas não produz uma chamada de ferramenta da LLM. A
+function calling é uma capacidade da rota de escalonamento, enquanto a
+validação determinística do pipeline é obrigatória para todos os registros.
 
 ### Tools de leitura com pdfplumber
 
@@ -359,7 +371,8 @@ GET /api/documents/{document_id}/file
 
 O endpoint valida o formato `sha256:<hash>` e localiza o PDF pelo conteúdo. Ele
 não aceita caminho de arquivo informado pelo cliente. A interface usa essa rota
-para exibir o documento sob demanda dentro do detalhe do registro. A resposta é
+para exibir a primeira página como miniatura e, sob demanda, o documento no
+visualizador completo. A resposta é
 servida como `application/pdf`, com disposição `inline` e sem cache no navegador.
 Identificadores inválidos, arquivos removidos ou hashes desconhecidos retornam
 `404`.
@@ -376,10 +389,11 @@ conferência:
 5. A aba `Visão geral` resume os controles e a conferência com a base oficial;
 6. A aba `Dados extraídos` explica cada campo e permite abrir sua evidência;
 7. A aba `Histórico da análise` reúne tentativas automáticas e regras aplicadas;
-8. O operador pode abrir o PDF no próprio detalhe e baixar o JSON individual;
+8. Uma miniatura mantém o PDF visível e permite abrir o visualizador completo;
 9. O relatório consolidado pode ser baixado pela ação `Baixar relatório do lote`.
 
-O visualizador é carregado somente quando solicitado. A trilha estruturada
+A miniatura da primeira página é carregada para o documento selecionado. O
+visualizador completo só é carregado quando solicitado. A trilha estruturada
 continua sendo a fonte principal de auditoria, para que a conferência normal não
 dependa da releitura integral do aviso.
 
@@ -431,10 +445,10 @@ O JSON gerado utiliza o schema `1.0`. Valores decimais são representados como
 strings e datas seguem ISO 8601. Consulte o
 [contrato de saída](f_docs/b_architecture/output-contract.md) completo.
 
-### Resultado gerado para o lote fornecido
+### Resultado de referência do lote fornecido
 
-Os artefatos entregues estão em `a_data/b_output`. O lote foi executado no
-ambiente Docker, com OCR em português disponível, e produziu:
+A execução validada do lote de oito documentos no ambiente Docker, com OCR em
+português disponível, produziu o seguinte resultado de referência:
 
 | Documento | Resultado | Motivo quando não aceito automaticamente |
 |---|---|---|
@@ -452,16 +466,27 @@ negócio e 0 falhas técnicas**. Todos foram resolvidos pela camada Python; por
 isso, o lote não consumiu chamadas de LLM. Isso é comportamento esperado da
 cascata, não ausência da integração com IA.
 
+Cada nova execução persiste os JSONs individuais e substitui
+`exception_report.json` pelo relatório do lote processado naquela chamada. Antes
+da entrega, `a_data/b_output` deve conter somente os oito JSONs canônicos acima
+e o respectivo relatório consolidado, sem artefatos de execuções anteriores.
+
 ## Confiança e status dos campos
 
 A confiança é categórica, evitando percentuais de precisão inexistente:
 
-- `HIGH`: evidência nativa explícita, enriquecimento por referência exata ou
-  derivação determinística validada;
-- `MEDIUM`: evidência obtida por OCR ou referência sem correspondência exata
-  completa;
+- `HIGH`: evidência nativa explícita, enriquecimento por referência exata,
+  derivação aprovada por todas as regras, campo não aplicável ou ausência
+  explicitamente documentada;
+- `MEDIUM`: evidência obtida por OCR, referência sem correspondência exata,
+  derivação ainda não aprovada por todas as regras ou ausência declarada sem
+  trecho literal;
 - `LOW`: ambiguidade, conflito, conteúdo ilegível, falta de evidência ou falha
   em uma validação do campo.
+
+Esses critérios aparecem na aba `Dados extraídos`, antes da lista de campos. A
+justificativa específica de cada valor permanece disponível ao expandir sua
+linha.
 
 O status explica o que aconteceu com o campo independentemente da confiança.
 Alguns exemplos são `EXTRACTED`, `REFERENCE_ENRICHED`, `DERIVED`,
@@ -470,6 +495,13 @@ Alguns exemplos são `EXTRACTED`, `REFERENCE_ENRICHED`, `DERIVED`,
 Um campo pode corretamente apresentar `value: null`,
 `status: NOT_DISCLOSED` e `confidence: HIGH`: o sistema possui alta confiança de
 que o emissor ainda não divulgou a informação.
+
+O schema é compartilhado por todos os tipos de evento. Assim, campos que não
+são exigidos para o evento atual podem permanecer `UNKNOWN/LOW` sem tornar o
+documento inseguro. O roteamento considera os campos materiais para o tipo de
+evento — por exemplo, valor por ação em dividendos e proporção em grupamentos —,
+além dos conflitos e falhas de validação. Baixa confiança em campo material
+sempre exige revisão.
 
 ## Revisão humana e exceções
 
@@ -532,6 +564,7 @@ Gere o build do frontend:
 
 ```bash
 cd b_frontend
+npm run typecheck
 npm run build
 ```
 

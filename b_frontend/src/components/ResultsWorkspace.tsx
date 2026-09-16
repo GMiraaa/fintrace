@@ -2,12 +2,18 @@ import { useEffect, useRef, useState } from 'react'
 
 import { getDocumentFileUrl } from '../api'
 import { REASON_LABELS, STATUS_LABELS } from '../constants'
+import { DocumentThumbnail } from './DocumentThumbnail'
 import { Icon } from './Icon'
 import { RecordDetail } from './RecordDetail'
+import type { BatchUploadResponse, ExceptionReportDocument, ProcessingStatus, RoutingReason } from '../types'
 
-export function ResultsWorkspace({ result }) {
+interface ResultsWorkspaceProps {
+  result: BatchUploadResponse
+}
+
+export function ResultsWorkspace({ result }: ResultsWorkspaceProps) {
   const [activeIndex, setActiveIndex] = useState(0)
-  const resultGridRef = useRef(null)
+  const resultGridRef = useRef<HTMLDivElement>(null)
   const summary = result.report.summary
   const activeDocument = result.report.documents[activeIndex]
   const activeRecord = result.records.find(
@@ -24,7 +30,7 @@ export function ResultsWorkspace({ result }) {
     setActiveIndex(firstException >= 0 ? firstException : 0)
   }, [result])
 
-  function openDocument(index) {
+  function openDocument(index: number) {
     setActiveIndex(index)
     window.requestAnimationFrame(() => {
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -83,26 +89,28 @@ export function ResultsWorkspace({ result }) {
   )
 }
 
-function FailureDetail({ document }) {
+function FailureDetail({ document }: { document?: ExceptionReportDocument }) {
+  const documentUrl = document?.document_id ? getDocumentFileUrl(document.document_id) : null
   return (
     <div className="failure-detail">
+      {documentUrl && document && <DocumentThumbnail fileName={document.file_name} url={documentUrl} />}
       <Icon name="alert" size={28} />
       <h3>O documento não foi processado</h3>
       <p>{document?.exceptions?.[0] ? exceptionText(document.exceptions[0]) : 'Consulte o histórico técnico para identificar a causa.'}</p>
-      {document?.document_id && <a className="secondary-action" href={getDocumentFileUrl(document.document_id)} rel="noreferrer" target="_blank"><Icon name="eye" size={17} />Ver documento original</a>}
+      {documentUrl && <a className="secondary-action" href={documentUrl} rel="noreferrer" target="_blank"><Icon name="eye" size={17} />Ver documento original</a>}
     </div>
   )
 }
 
-function SummaryValue({ label, value, tone }) {
+function SummaryValue({ label, value, tone }: { label: string; value: number; tone: 'accepted' | 'review' | 'pending' | 'failed' }) {
   return <div className={`summary-value summary-value--${tone}`}><span className={`status-dot status-dot--summary-${tone}`} /><strong>{value}</strong><span>{label}</span></div>
 }
 
-function StatusDot({ status }) {
+function StatusDot({ status }: { status: ProcessingStatus }) {
   return <span aria-label={STATUS_LABELS[status]} className={`status-dot status-dot--${status.toLowerCase()}`} />
 }
 
-function downloadJson(name, payload) {
+function downloadJson(name: string, payload: unknown) {
   const blob = new Blob([`${JSON.stringify(payload, null, 2)}\n`], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -112,6 +120,6 @@ function downloadJson(name, payload) {
   URL.revokeObjectURL(url)
 }
 
-function exceptionText(exception) {
+function exceptionText(exception: RoutingReason): string {
   return REASON_LABELS[exception.code] || exception.message || 'O documento precisa de atenção.'
 }

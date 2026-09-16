@@ -1,11 +1,11 @@
-export const STATUS_LABELS = {
+export const STATUS_LABELS: Record<string, string> = {
   ACCEPTED: 'Aceito automaticamente',
   REVIEW_REQUIRED: 'Revisão necessária',
   PENDING_INFORMATION: 'Informação pendente',
   FAILED: 'Falhou',
 }
 
-export const EVENT_TYPE_LABELS = {
+export const EVENT_TYPE_LABELS: Record<string, string> = {
   DIVIDEND: 'Dividendos',
   JCP: 'Juros sobre capital próprio',
   BONUS_SHARES: 'Bonificação em ações',
@@ -15,7 +15,7 @@ export const EVENT_TYPE_LABELS = {
   UNKNOWN: 'Evento não identificado',
 }
 
-export const FIELD_STATUS_LABELS = {
+export const FIELD_STATUS_LABELS: Record<string, string> = {
   EXTRACTED: 'Extraído',
   REFERENCE_ENRICHED: 'Enriquecido',
   DERIVED: 'Derivado',
@@ -27,7 +27,7 @@ export const FIELD_STATUS_LABELS = {
   UNKNOWN: 'Desconhecido',
 }
 
-export const DATE_LABELS = {
+export const DATE_LABELS: Record<string, string> = {
   approval_date: 'Aprovação',
   record_date: 'Data com',
   ex_date: 'Data ex',
@@ -37,7 +37,7 @@ export const DATE_LABELS = {
   fraction_period_end: 'Fim de frações',
 }
 
-export const FINANCIAL_LABELS = {
+export const FINANCIAL_LABELS: Record<string, string> = {
   gross_amount_per_share: 'Valor bruto por ação',
   net_amount_per_share: 'Valor líquido por ação',
   tax_rate_percent: 'Alíquota',
@@ -47,37 +47,37 @@ export const FINANCIAL_LABELS = {
   attributed_cost_per_share: 'Custo atribuído por ação',
 }
 
-export const EXTRACTION_STRATEGY_LABELS = {
+export const EXTRACTION_STRATEGY_LABELS: Record<string, string> = {
   PYTHON: 'Leitura automática local',
   BASIC_LLM: 'Modelo de IA básico',
   STRONG_LLM: 'Modelo de IA avançado',
 }
 
-export const EXTRACTION_OUTCOME_LABELS = {
+export const EXTRACTION_OUTCOME_LABELS: Record<string, string> = {
   SUFFICIENT: 'Suficiente',
   INSUFFICIENT: 'Insuficiente',
   ERROR: 'Erro',
 }
 
-export const ORIGIN_LABELS = {
+export const ORIGIN_LABELS: Record<string, string> = {
   DOCUMENT: 'Documento',
   REFERENCE: 'Base de referência',
   DERIVED: 'Regra determinística',
   UNKNOWN: 'Origem desconhecida',
 }
 
-export const EXTRACTION_METHOD_LABELS = {
+export const EXTRACTION_METHOD_LABELS: Record<string, string> = {
   NATIVE_TEXT: 'Texto nativo',
   OCR: 'OCR',
 }
 
-export const CONFIDENCE_LABELS = {
+export const CONFIDENCE_LABELS: Record<string, string> = {
   HIGH: 'Alta',
   MEDIUM: 'Média',
   LOW: 'Baixa',
 }
 
-export const MATCH_FIELD_LABELS = {
+export const MATCH_FIELD_LABELS: Record<string, string> = {
   issuer: 'emissor',
   cnpj: 'CNPJ',
   isin: 'ISIN',
@@ -85,7 +85,7 @@ export const MATCH_FIELD_LABELS = {
   share_class: 'classe do ativo',
 }
 
-export const VALIDATION_STATUS_LABELS = {
+export const VALIDATION_STATUS_LABELS: Record<string, string> = {
   PASS: 'Aprovada',
   WARN: 'Atenção',
   FAIL: 'Reprovada',
@@ -93,7 +93,7 @@ export const VALIDATION_STATUS_LABELS = {
   NOT_EVALUATED: 'Não avaliada',
 }
 
-export const VALIDATION_RULE_LABELS = {
+export const VALIDATION_RULE_LABELS: Record<string, string> = {
   REF_NO_MATCH: 'Ativo não encontrado na base oficial',
   REF_STRONG_IDENTIFIER_CONFLICT: 'CNPJ e ISIN apontam para ativos diferentes',
   REF_ISSUER_MATCH: 'Emissor confere com a base oficial',
@@ -124,7 +124,7 @@ export const VALIDATION_RULE_LABELS = {
   EVENT_UNKNOWN: 'Tipo de evento não identificado',
 }
 
-export const REASON_LABELS = {
+export const REASON_LABELS: Record<string, string> = {
   EXTRACTION_CASCADE_EXHAUSTED: 'As tentativas automáticas não resolveram todos os campos críticos.',
   PAYMENT_DATE_NOT_DISCLOSED: 'A data de pagamento ainda não foi divulgada pelo emissor.',
   REFERENCE_NOT_FOUND: 'O ativo não foi confirmado na base oficial.',
@@ -143,7 +143,7 @@ export const REASON_LABELS = {
   PROCESSING_FAILED: 'O processamento do documento falhou.',
 }
 
-export const TAX_TREATMENT_LABELS = {
+export const TAX_TREATMENT_LABELS: Record<string, string> = {
   NOT_APPLICABLE: 'Não se aplica',
   TAX_EXEMPT: 'Isento',
   TAX_RULE_UNIFORM: 'Tributação uniforme',
@@ -151,7 +151,7 @@ export const TAX_TREATMENT_LABELS = {
   UNKNOWN: 'Não identificado',
 }
 
-export const FIELD_HELP = {
+export const FIELD_HELP: Record<string, string> = {
   'Tipo de evento': 'Natureza econômica identificada no aviso.',
   Emissor: 'Companhia responsável pelo evento corporativo.',
   CNPJ: 'Identificador fiscal usado para confirmar o emissor.',
@@ -176,7 +176,7 @@ export const FIELD_HELP = {
   'Custo atribuído por ação': 'Custo fiscal atribuído a cada nova ação.',
 }
 
-export const FIELD_PATH_LABELS = {
+export const FIELD_PATH_LABELS: Record<string, string> = {
   'corporate_action.event_type': 'Tipo de evento',
   'corporate_action.dates.approval_date': 'Data de aprovação',
   'corporate_action.dates.record_date': 'Data com',

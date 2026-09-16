@@ -1,6 +1,12 @@
 import { Icon } from './Icon'
+import type { CSSProperties } from 'react'
 
-export function TracePreview({ state, hasResult }) {
+interface TracePreviewProps {
+  state: 'idle' | 'processing' | 'done' | 'error'
+  hasResult: boolean
+}
+
+export function TracePreview({ state, hasResult }: TracePreviewProps) {
   const active = state === 'processing'
   const stages = [
     ['Ler o aviso', 'O sistema tenta texto nativo e OCR quando necessário.'],
@@ -15,7 +21,7 @@ export function TracePreview({ state, hasResult }) {
       </div>
       <div className="trace-line">
         {stages.map(([title, description], index) => (
-          <div className="trace-stage" key={title} style={{ '--stage': index }}>
+          <div className="trace-stage" key={title} style={{ '--stage': index } as CSSProperties}>
             <span className="trace-node">{hasResult ? <Icon name="check" size={15} /> : index + 1}</span>
             <div><strong>{title}</strong><p>{description}</p></div>
           </div>

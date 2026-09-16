@@ -8,7 +8,7 @@ ser preservadas em futuras evoluções.
 ```mermaid
 flowchart TB
     subgraph Cliente
-        FE[Frontend React]
+        FE[Frontend React e TypeScript]
     end
     subgraph Backend FastAPI
         HTTP[API e segurança de upload]
@@ -92,9 +92,10 @@ flowchart TB
   presente no `document_id`. Nomes e caminhos enviados pelo cliente não são
   usados para localizar arquivos. A busca é restrita a PDFs do diretório de
   entrada, e a resposta é `inline`, privada e sem cache.
-- O frontend carrega o PDF somente por ação do operador. A auditoria primária
-  permanece no JSON estruturado; o documento é apoio para investigação, não uma
-  dependência para conferir cada campo.
+- O frontend carrega uma miniatura da primeira página do documento selecionado.
+  O visualizador completo depende de ação do operador. A auditoria primária
+  permanece no JSON estruturado; o documento é apoio para investigação, não
+  uma dependência para conferir cada campo.
 
 ## Dependências e representação de dados
 
@@ -143,6 +144,10 @@ flowchart TB
   o pipeline repete o cruzamento e continua sendo a autoridade final.
 - **Modelos Pydantic compartilhados:** API, persistência, validação e frontend
   consomem o mesmo contrato, reduzindo divergência estrutural.
+- **Contrato espelhado em TypeScript estrito:** o frontend tipa registros,
+  relatórios, enums e respostas HTTP em `types.ts`. Há alguma duplicação em
+  relação ao Pydantic, aceita no MVP; `npm run typecheck` detecta divergências
+  durante o desenvolvimento.
 - **Filesystem no MVP:** permite inspecionar e entregar diretamente os artefatos
   exigidos pelo case sem banco ou infraestrutura adicional.
 - **Documento localizado por identidade de conteúdo:** o mesmo SHA-256 usado no
@@ -180,8 +185,9 @@ flowchart TB
 - **Não incluir autenticação no MVP:** o ambiente é local. Uma publicação real
   exigiria autenticação, autorização, criptografia e política de retenção.
 - **Não embutir o PDF no JSON:** isso aumentaria muito o tamanho do artefato e
-  misturaria dado estruturado com conteúdo binário. O frontend o solicita por
-  endpoint separado apenas quando necessário.
+  misturaria dado estruturado com conteúdo binário. O frontend solicita por
+  endpoint separado a miniatura do documento selecionado e o visualizador
+  completo quando necessário.
 
 ## Decisões ainda pendentes
 
