@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import logging
 import re
 from collections.abc import Callable
 from typing import Any
@@ -11,6 +13,8 @@ from src.documents.models import NormalizedDocument
 
 from .schemas import AgentExtraction
 from .toolbox import CorporateActionToolbox
+
+logger = logging.getLogger(__name__)
 
 
 class AgentProviderError(RuntimeError):
@@ -34,7 +38,7 @@ class GeminiCorporateActionAgent:
         skill_text: str,
         toolbox: CorporateActionToolbox | None = None,
         include_pdf_tools: bool = True,
-        max_remote_calls: int = 3,
+        max_remote_calls: int = 5,
         client: Any | None = None,
     ) -> None:
         if not api_key and client is None:
@@ -92,21 +96,7 @@ class GeminiCorporateActionAgent:
         *,
         context: str | None = None,
     ) -> AgentExtraction:
-        prompt = (
-            "Extract the corporate action notice below. Return every schema field. "
-            "Use null plus the most precise status when a value is unavailable. "
-            "Evidence must be a verbatim excerpt from the cited page. Do not perform "
-            "arithmetic validation or confidence scoring. Use a tool only when the "
-            "normalized document does not provide enough information to verify the "
-            "field reliably. Do not call tools for fields already supported by explicit "
-            "document evidence. If lookup_golden_record is needed, call it at most once. "
-            "Use its result only to detect disagreement; never present reference data "
-            "as document evidence.\n\n"
-            f"DOCUMENT: {document.file_name}\n\n{document.as_prompt_text()}"
-        )
-        if context:
-            prompt = f"{prompt}\n\nESCALATION CONTEXT:\n{context}"
-        tools: list[Callable[..., str]] = (
+        available_tools: list[Callable[..., str]] = (
             self.toolbox.tools_for(
                 document,
                 include_pdf_tools=self.include_pdf_tools,
@@ -114,6 +104,40 @@ class GeminiCorporateActionAgent:
             if self.toolbox is not None
             else []
         )
+        reference_tool = next(
+            (
+                tool
+                for tool in available_tools
+                if tool.__name__ == "lookup_golden_record"
+            ),
+            None,
+        )
+        tools = [
+            tool
+            for tool in available_tools
+            if tool.__name__ != "lookup_golden_record"
+        ]
+        reference_results = (
+            self._run_required_reference_lookup(document, reference_tool)
+            if reference_tool is not None
+            else []
+        )
+        prompt = (
+            "Extract the corporate action notice below. Return every schema field. "
+            "Use null plus the most precise status when a value is unavailable. "
+            "Evidence must be a verbatim excerpt from the cited page. Do not perform "
+            "arithmetic validation or confidence scoring. The mandatory golden-record "
+            "function calling has already been completed. Use its results only to detect "
+            "disagreement; never present reference data as document evidence. Use every "
+            "remaining tool only when the normalized document does not provide enough "
+            "information, and do not call those tools for fields already supported by "
+            "explicit document evidence.\n\n"
+            "GOLDEN RECORD FUNCTION RESULTS:\n"
+            f"{json.dumps(reference_results, ensure_ascii=False)}\n\n"
+            f"DOCUMENT: {document.file_name}\n\n{document.as_prompt_text()}"
+        )
+        if context:
+            prompt = f"{prompt}\n\nESCALATION CONTEXT:\n{context}"
         if (
             self.include_pdf_tools
             and self.toolbox is not None
@@ -135,8 +159,12 @@ class GeminiCorporateActionAgent:
                     response_schema=_gemini_response_schema(),
                     temperature=0,
                     tools=tools or None,
-                    automatic_function_calling=types.AutomaticFunctionCallingConfig(
-                        maximum_remote_calls=self.max_remote_calls,
+                    automatic_function_calling=(
+                        types.AutomaticFunctionCallingConfig(
+                            maximum_remote_calls=self.max_remote_calls,
+                        )
+                        if tools
+                        else None
                     ),
                 ),
             )
@@ -172,6 +200,79 @@ class GeminiCorporateActionAgent:
             raise AgentStructuredOutputError(
                 "Gemini returned invalid structured output"
             ) from exc
+
+    def _run_required_reference_lookup(
+        self,
+        document: NormalizedDocument,
+        reference_tool: Callable[..., str],
+    ) -> list[str]:
+        prompt = (
+            "Read the document identifiers and call lookup_golden_record one or two "
+            "times. You MUST return function calls, not a text answer. Use a second call "
+            "only when it is necessary to resolve competing identifier combinations.\n\n"
+            f"DOCUMENT: {document.file_name}\n\n{document.as_prompt_text()}"
+        )
+        try:
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=self.skill_text,
+                    temperature=0,
+                    tools=[reference_tool],
+                    tool_config=types.ToolConfig(
+                        function_calling_config=types.FunctionCallingConfig(
+                            mode=types.FunctionCallingConfigMode.ANY,
+                            allowed_function_names=["lookup_golden_record"],
+                        )
+                    ),
+                    automatic_function_calling=types.AutomaticFunctionCallingConfig(
+                        disable=True,
+                    ),
+                ),
+            )
+        except Exception as exc:
+            detail = _safe_provider_error_detail(exc)
+            if _provider_is_temporarily_unavailable(exc):
+                raise AgentProviderUnavailableError(
+                    f"Gemini is temporarily unavailable ({detail})"
+                ) from exc
+            raise AgentProviderError(
+                f"Gemini reference function request failed ({detail})"
+            ) from exc
+
+        function_calls = [
+            call
+            for call in (getattr(response, "function_calls", None) or [])
+            if getattr(call, "name", None) == "lookup_golden_record"
+        ]
+        if not 1 <= len(function_calls) <= 2:
+            raise AgentStructuredOutputError(
+                "Gemini must request lookup_golden_record once or twice before "
+                "structured extraction; observed "
+                f"{len(function_calls)} call(s)"
+            )
+
+        results = []
+        for call in function_calls:
+            try:
+                results.append(reference_tool(**dict(call.args or {})))
+            except Exception as exc:
+                raise AgentStructuredOutputError(
+                    "Gemini supplied invalid lookup_golden_record arguments"
+                ) from exc
+
+        logger.info(
+            "mandatory golden record function calling completed",
+            extra={
+                "event_data": {
+                    "model": self.model,
+                    "tool": "lookup_golden_record",
+                    "tool_call_count": len(function_calls),
+                }
+            },
+        )
+        return results
 
 
 def _provider_is_temporarily_unavailable(error: Exception) -> bool:

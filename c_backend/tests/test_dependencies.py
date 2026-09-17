@@ -37,5 +37,5 @@ def test_basic_and_strong_models_receive_reference_function_calling(
     assert basic["toolbox"] is strong["toolbox"]
     assert basic["include_pdf_tools"] is False
     assert strong["include_pdf_tools"] is True
-    assert basic["max_remote_calls"] == 3
-    assert strong["max_remote_calls"] == 3
+    assert "max_remote_calls" not in basic
+    assert "max_remote_calls" not in strong

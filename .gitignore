@@ -64,5 +64,8 @@ a_data/b_output/*
 !a_data/b_output/.gitkeep
 !a_data/b_output/*.json
 
+# Reprocessamentos recebem um sufixo hexadecimal e são artefatos locais.
+a_data/b_output/*_[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f].json
+
 # Não versiona os arquivos inputados
 a_data/a_input/

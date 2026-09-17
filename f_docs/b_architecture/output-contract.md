@@ -286,11 +286,15 @@ média dos percentuais dos campos materiais; ausências contribuem com zero. A
 o cálculo auditável e um score abaixo de 75 exige revisão humana. O percentual
 não representa uma probabilidade estatística produzida pela LLM.
 
-Com chave configurada, há duas tentativas `BASIC_LLM`, com acesso opcional a
-`lookup_golden_record`. `STRONG_LLM` é a terceira passagem somente quando algum
-campo material permanece pendente; nesse nível também ficam disponíveis as
-funções controladas de leitura do PDF. O AFC é limitado a três chamadas remotas
-por passagem e nenhuma tool deve ser chamada quando o texto normalizado basta.
+Com chave configurada, há duas tentativas `BASIC_LLM`. Antes de cada extração, o
+modelo passa por uma chamada dedicada em modo `ANY`, na qual deve solicitar
+`lookup_golden_record` uma ou duas vezes. O backend executa as funções e inclui
+os resultados no prompt estruturado; zero ou mais de duas solicitações invalidam
+a etapa. `STRONG_LLM` é a terceira passagem somente quando algum campo material
+permanece pendente; nesse nível também ficam disponíveis as funções controladas
+de leitura do PDF. O AFC dessas tools é limitado a cinco chamadas remotas por
+passagem; somente as tools de PDF permanecem opcionais quando o texto normalizado
+basta.
 `PYTHON` só aparece sem chave ou quando todas as tentativas de IA falham antes
 de produzir uma resposta estruturada válida. Uma resposta válida, mas
 insuficiente, não é mascarada pela contingência; os erros anteriores continuam

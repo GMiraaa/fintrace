@@ -161,18 +161,21 @@ humana. Sem chave do Gemini, a contingência Python é usada diretamente.
 
 ### Tools com acesso mínimo
 
-O modelo básico pode consultar `lookup_golden_record`. O modelo forte recebe a
-mesma consulta e, quando necessário, três funções de leitura vinculadas somente
-ao PDF atual:
+Antes da extração estruturada, o modelo básico e o modelo forte passam por uma
+etapa dedicada que força `lookup_golden_record` em modo function calling `ANY`.
+O agente deve solicitar uma ou duas consultas com os identificadores disponíveis;
+zero ou mais de duas chamadas invalidam a etapa. O backend executa a função e
+injeta os resultados na etapa seguinte. Quando necessário, o modelo forte também
+recebe três funções de leitura vinculadas somente ao PDF atual:
 
 - `extract_pdf_text` — texto de um intervalo controlado de páginas;
 - `extract_pdf_tables` — tabelas de uma página;
 - `inspect_pdf_words` — palavras e coordenadas para relações de layout.
 
-As tools devem ser usadas apenas quando o texto normalizado não permitir a
-verificação. Cada passagem aceita no máximo três chamadas remotas automáticas,
-e a consulta de referência é limitada a uma chamada. O agente não recebe shell,
-caminho arbitrário, filesystem genérico ou execução de código.
+A consulta de referência é obrigatória; as tools de PDF devem ser usadas apenas
+quando o texto normalizado não permitir a verificação. Cada passagem aceita no
+máximo cinco chamadas remotas automáticas. O agente não recebe shell, caminho
+arbitrário, filesystem genérico ou execução de código.
 
 ### Leitura de PDFs e OCR
 

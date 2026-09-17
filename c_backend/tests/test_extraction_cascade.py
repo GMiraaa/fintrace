@@ -331,6 +331,54 @@ def test_disagreement_between_basic_passes_triggers_strong_verdict() -> None:
     )
 
 
+def test_equivalent_issuer_spellings_reach_full_consensus() -> None:
+    first = sufficient_dividend()
+    first.issuer.name = field("Energética Vale do Tietê S.A.")
+    second = sufficient_dividend()
+    second.issuer.name = field("ENERGETICA VALE DO TIETE SA")
+    strong = StaticExtractor(sufficient_dividend(), model="forte")
+    cascade = CascadingCorporateActionExtractor(
+        python_extractor=StaticExtractor(AgentExtraction()),
+        basic_agent=SequenceExtractor([first, second]),
+        strong_agent=strong,
+    )
+
+    result = cascade.extract(document())
+
+    assert strong.calls == 0
+    assert result.extraction.issuer.name.status is FieldStatus.EXTRACTED
+    assert result.agreement_scores["issuer.name"] == 100
+    assert any(
+        check.code == "AGENT_CONSENSUS" and check.passed
+        for check in result.preliminary_checks
+    )
+
+
+def test_equivalent_decimal_precisions_reach_full_consensus() -> None:
+    first = sufficient_dividend()
+    first.corporate_action.financials.gross_amount_per_share = field(
+        Decimal("0.4275")
+    )
+    second = sufficient_dividend()
+    second.corporate_action.financials.gross_amount_per_share = field(
+        Decimal("0.4275000000")
+    )
+    cascade = CascadingCorporateActionExtractor(
+        python_extractor=StaticExtractor(AgentExtraction()),
+        basic_agent=SequenceExtractor([first, second]),
+    )
+
+    result = cascade.extract(document())
+
+    assert result.agreement_scores[
+        "corporate_action.financials.gross_amount_per_share"
+    ] == 100
+    assert any(
+        check.code == "AGENT_CONSENSUS" and check.passed
+        for check in result.preliminary_checks
+    )
+
+
 def test_failed_non_required_preliminary_check_does_not_trigger_strong_model() -> None:
     strong = StaticExtractor(sufficient_dividend(), model="forte")
     cascade = CascadingCorporateActionExtractor(

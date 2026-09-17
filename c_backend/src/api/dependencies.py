@@ -46,7 +46,6 @@ def build_pipeline(settings: AppSettings) -> ProcessingPipeline:
                     skill_text=skill_text,
                     toolbox=toolbox,
                     include_pdf_tools=False,
-                    max_remote_calls=3,
                 )
                 if settings.gemini_api_key
                 else None
@@ -58,7 +57,6 @@ def build_pipeline(settings: AppSettings) -> ProcessingPipeline:
                     skill_text=skill_text,
                     toolbox=toolbox,
                     include_pdf_tools=True,
-                    max_remote_calls=3,
                 )
                 if settings.gemini_api_key
                 else None

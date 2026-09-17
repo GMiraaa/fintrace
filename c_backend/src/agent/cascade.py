@@ -4,7 +4,12 @@ import json
 from collections import Counter
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import date
+from decimal import Decimal
+from enum import Enum
 from typing import Any
+
+from pydantic import BaseModel
 
 from src.documents.models import NormalizedDocument
 from src.models.enums import (
@@ -14,13 +19,17 @@ from src.models.enums import (
     FieldStatus,
 )
 from src.models.schemas import ExtractionAttempt, PreliminaryCheck
+from src.tools.normalization import (
+    normalize_cnpj,
+    normalize_isin,
+    normalize_issuer,
+    normalize_share_class,
+    normalize_text,
+    normalize_ticker,
+)
 
 from .base import CorporateActionAgent
-from .gemini import (
-    AgentProviderError,
-    AgentProviderUnavailableError,
-    AgentStructuredOutputError,
-)
+from .gemini import AgentProviderError
 from .schemas import AgentExtraction, ExtractedField
 
 UNRESOLVED_STATUSES = {
@@ -28,6 +37,15 @@ UNRESOLVED_STATUSES = {
     FieldStatus.AMBIGUOUS,
     FieldStatus.CONFLICT,
     FieldStatus.UNREADABLE,
+}
+
+CONSENSUS_NORMALIZERS: dict[str, Callable[[str | None], str | None]] = {
+    "issuer.name": normalize_issuer,
+    "issuer.cnpj": normalize_cnpj,
+    "security.isin": normalize_isin,
+    "security.ticker": normalize_ticker,
+    "security.share_class": normalize_share_class,
+    "corporate_action.financials.currency": normalize_text,
 }
 
 
@@ -93,22 +111,6 @@ class CascadingCorporateActionExtractor:
                         model=model,
                         pass_number=_pass_number,
                     )
-                except AgentStructuredOutputError as exc:
-                    current_attempt = _failed_attempt(
-                        ExtractionStrategy.BASIC_LLM,
-                        extraction,
-                        model=model,
-                        pass_number=_pass_number,
-                        error=str(exc),
-                    )
-                except AgentProviderUnavailableError as exc:
-                    current_attempt = _failed_attempt(
-                        ExtractionStrategy.BASIC_LLM,
-                        extraction,
-                        model=model,
-                        pass_number=_pass_number,
-                        error=str(exc),
-                    )
                 except AgentProviderError as exc:
                     current_attempt = _failed_attempt(
                         ExtractionStrategy.BASIC_LLM,
@@ -153,22 +155,6 @@ class CascadingCorporateActionExtractor:
                     extraction,
                     model=model,
                     pass_number=len(attempts) + 1,
-                )
-            except AgentStructuredOutputError as exc:
-                current_attempt = _failed_attempt(
-                    ExtractionStrategy.STRONG_LLM,
-                    extraction,
-                    model=model,
-                    pass_number=len(attempts) + 1,
-                    error=str(exc),
-                )
-            except AgentProviderUnavailableError as exc:
-                current_attempt = _failed_attempt(
-                    ExtractionStrategy.STRONG_LLM,
-                    extraction,
-                    model=model,
-                    pass_number=len(attempts) + 1,
-                    error=str(exc),
                 )
             except AgentProviderError as exc:
                 current_attempt = _failed_attempt(
@@ -339,10 +325,15 @@ def merge_extractions(
         }:
             _copy_field(target, source)
             continue
-        if target.value == source.value and target.status is not FieldStatus.CONFLICT:
+        if (
+            _field_values_equal(path, target, source)
+            and target.status is not FieldStatus.CONFLICT
+        ):
             target.sources = _merge_sources(target.sources, source.sources)
             continue
-        if source.value is not None and target.value != source.value:
+        if source.value is not None and not _field_values_equal(
+            path, target, source
+        ):
             target.status = FieldStatus.CONFLICT
             target.sources = _merge_sources(target.sources, source.sources)
 
@@ -490,7 +481,7 @@ def calculate_agreement_scores(
     scores: dict[str, int] = {}
     for path in _field_map(responses[0]):
         signatures = [
-            _field_signature(_field_map(response)[path])
+            _field_signature(path, _field_map(response)[path])
             for response in responses
         ]
         most_common = Counter(signatures).most_common(1)[0][1]
@@ -499,12 +490,49 @@ def calculate_agreement_scores(
     return scores
 
 
-def _field_signature(field: ExtractedField[Any]) -> str:
+def _field_signature(path: str, field: ExtractedField[Any]) -> str:
     return json.dumps(
         {
-            "value": field.model_dump(mode="json")["value"],
+            "value": _canonical_field_value(path, field),
             "status": field.status.value,
         },
         ensure_ascii=False,
         sort_keys=True,
     )
+
+
+def _field_values_equal(
+    path: str,
+    first: ExtractedField[Any],
+    second: ExtractedField[Any],
+) -> bool:
+    return _canonical_field_value(path, first) == _canonical_field_value(
+        path, second
+    )
+
+
+def _canonical_field_value(path: str, field: ExtractedField[Any]) -> Any:
+    value = field.value
+    normalizer = CONSENSUS_NORMALIZERS.get(path)
+    if normalizer is not None and (value is None or isinstance(value, str)):
+        return normalizer(value)
+    return _canonical_value(value)
+
+
+def _canonical_value(value: Any) -> Any:
+    if isinstance(value, Enum):
+        return value.value
+    if isinstance(value, Decimal):
+        return str(value.normalize())
+    if isinstance(value, date):
+        return value.isoformat()
+    if isinstance(value, BaseModel):
+        return _canonical_value(value.model_dump(mode="python"))
+    if isinstance(value, dict):
+        return {
+            key: _canonical_value(item)
+            for key, item in sorted(value.items())
+        }
+    if isinstance(value, (list, tuple)):
+        return [_canonical_value(item) for item in value]
+    return value

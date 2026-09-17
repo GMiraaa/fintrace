@@ -1,8 +1,11 @@
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from src.agent.gemini import (
     AgentProviderError,
+    AgentStructuredOutputError,
     GeminiCorporateActionAgent,
     _gemini_response_schema,
 )
@@ -93,6 +96,7 @@ def test_gemini_adapter_accepts_parsed_response() -> None:
     result = agent.extract(normalized_document())
 
     assert result.corporate_action.event_type.value is EventType.JCP
+    assert agent.max_remote_calls == 5
 
 
 def test_agent_schema_avoids_constraints_unsupported_by_gemini_sdk() -> None:
@@ -156,15 +160,25 @@ def test_gemini_consensus_passes_use_independent_instructions() -> None:
 
 
 def test_gemini_adapter_exposes_reference_function_calling_tool() -> None:
-    received = {}
-    response = SimpleNamespace(parsed=AgentExtraction(), text=None)
+    requests = []
+    lookups = []
 
     def generate_content(**kwargs):
-        received.update(kwargs)
-        return response
+        requests.append(kwargs)
+        if len(requests) == 1:
+            return SimpleNamespace(
+                function_calls=[
+                    SimpleNamespace(
+                        name="lookup_golden_record",
+                        args={"isin": "BRTESTACNOR1"},
+                    )
+                ]
+            )
+        return SimpleNamespace(parsed=AgentExtraction(), text=None)
 
     def lookup_golden_record(isin: str = "") -> str:
         """Consulta um ISIN na base de referência."""
+        lookups.append(isin)
         return isin
 
     client = SimpleNamespace(
@@ -183,7 +197,116 @@ def test_gemini_adapter_exposes_reference_function_calling_tool() -> None:
 
     agent.extract(normalized_document())
 
-    assert received["config"].tools == [lookup_golden_record]
+    assert [tool.__name__ for tool in requests[0]["config"].tools] == [
+        "lookup_golden_record"
+    ]
+    assert requests[0]["config"].automatic_function_calling.disable is True
+    function_calling = requests[0]["config"].tool_config.function_calling_config
+    assert function_calling.mode.value == "ANY"
+    assert requests[1]["config"].tools is None
+    assert requests[1]["config"].automatic_function_calling is None
+    assert lookups == ["BRTESTACNOR1"]
+    assert "MUST return function calls" in requests[0]["contents"]
+    assert "GOLDEN RECORD FUNCTION RESULTS" in requests[1]["contents"]
+
+
+def test_gemini_adapter_rejects_response_without_required_reference_call() -> None:
+    def lookup_golden_record(isin: str = "") -> str:
+        return isin
+
+    agent = GeminiCorporateActionAgent(
+        api_key="",
+        model="test-model",
+        skill_text="test skill",
+        toolbox=SimpleNamespace(
+            tools_for=lambda _document, **_kwargs: [lookup_golden_record]
+        ),
+        client=SimpleNamespace(
+            models=SimpleNamespace(
+                generate_content=lambda **_kwargs: SimpleNamespace(
+                    function_calls=[]
+                )
+            )
+        ),
+    )
+
+    with pytest.raises(AgentStructuredOutputError, match="once or twice"):
+        agent.extract(normalized_document())
+
+
+def test_gemini_adapter_accepts_two_reference_calls() -> None:
+    requests = []
+
+    def lookup_golden_record(isin: str = "") -> str:
+        return isin
+
+    def generate_content(**kwargs):
+        requests.append(kwargs)
+        if len(requests) == 1:
+            return SimpleNamespace(
+                function_calls=[
+                    SimpleNamespace(
+                        name="lookup_golden_record",
+                        args={"isin": "BRTESTACNOR1"},
+                    ),
+                    SimpleNamespace(
+                        name="lookup_golden_record",
+                        args={"isin": "BRTESTACNOR1"},
+                    ),
+                ]
+            )
+        return SimpleNamespace(parsed=AgentExtraction(), text=None)
+
+    agent = GeminiCorporateActionAgent(
+        api_key="",
+        model="test-model",
+        skill_text="test skill",
+        toolbox=SimpleNamespace(
+            tools_for=lambda _document, **_kwargs: [lookup_golden_record]
+        ),
+        client=SimpleNamespace(
+            models=SimpleNamespace(generate_content=generate_content)
+        ),
+    )
+
+    agent.extract(normalized_document())
+
+    assert len(requests) == 2
+
+
+def test_gemini_adapter_rejects_more_than_two_reference_calls() -> None:
+    def lookup_golden_record(isin: str = "") -> str:
+        return isin
+
+    def generate_content(**kwargs):
+        return SimpleNamespace(
+            function_calls=[
+                SimpleNamespace(
+                    name="lookup_golden_record", args={"isin": "A"}
+                ),
+                SimpleNamespace(
+                    name="lookup_golden_record", args={"isin": "B"}
+                ),
+                SimpleNamespace(
+                    name="lookup_golden_record", args={"isin": "C"}
+                ),
+            ]
+        )
+
+    agent = GeminiCorporateActionAgent(
+        api_key="",
+        model="test-model",
+        skill_text="test skill",
+        toolbox=SimpleNamespace(
+            tools_for=lambda _document, **_kwargs: [lookup_golden_record]
+        ),
+        client=SimpleNamespace(
+            models=SimpleNamespace(generate_content=generate_content)
+        ),
+    )
+
+    with pytest.raises(AgentStructuredOutputError, match="once or twice"):
+        agent.extract(normalized_document())
 
 
 def test_gemini_adapter_exposes_pdf_tools_bound_to_current_document(
@@ -269,7 +392,7 @@ def test_strong_agent_keeps_pdf_tools_optional_during_escalation(
 
     assert "Use these tools only when" in received["contents"]
     assert "call at least one PDFPLUMBER tool" not in received["contents"]
-    assert received["config"].automatic_function_calling.maximum_remote_calls == 3
+    assert received["config"].automatic_function_calling.maximum_remote_calls == 5
 
 
 def test_basic_agent_can_disable_pdf_tools(tmp_path: Path) -> None:

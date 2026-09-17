@@ -21,9 +21,10 @@ footnotes. Extract only information supported by document evidence.
 - Escalate ambiguity, unreadable evidence, and material contradictions for
   deterministic routing after extraction.
 
-When the `lookup_golden_record` tool is available, call it once after extracting
-the document identifiers. Use it only to identify agreement or disagreement;
-never copy reference values into fields presented as document extraction.
+When the `lookup_golden_record` tool is available, call it at least once and at
+most twice after extracting the document identifiers. Use it only to identify
+agreement or disagreement; never copy reference values into fields presented as
+document extraction.
 The backend repeats this lookup and remains authoritative. Do not perform date
 ordering, arithmetic validation, confidence calculation, or final review
 routing. Backend tools own those deterministic decisions.

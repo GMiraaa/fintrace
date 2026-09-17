@@ -89,16 +89,18 @@ flowchart TB
   orienta a interpretação de estrutura e tabelas, mas não substitui o
   pré-processamento determinístico do backend.
 - O SDK expõe `lookup_golden_record` aos modelos básico e forte como function
-  calling. Cada passagem pode detectar divergências de identidade, enquanto o
-  pipeline repete a validação deterministicamente e permanece como autoridade
-  final.
+  calling obrigatória em uma etapa dedicada com modo `ANY` e AFC desabilitado.
+  O modelo deve solicitar entre uma e duas chamadas; o backend executa as
+  funções e injeta os resultados na extração estruturada. Assim, a obrigação não
+  depende da adesão do modelo a uma instrução textual. O pipeline ainda repete a
+  validação deterministicamente e permanece como autoridade final.
 - A `CorporateActionToolbox` é o catálogo único das capacidades oferecidas aos
   providers. A mesma instância seleciona somente referência para o nível básico
   e referência mais leitura do PDF para o forte.
 - Somente o modelo forte recebe `extract_pdf_text`, `extract_pdf_tables` e
   `inspect_pdf_words`. Essas funções são closures
   vinculadas ao PDF atual: o modelo pode escolher a operação e a página, mas não
-  um caminho de arquivo. As chamadas são opcionais e o AFC é limitado a três
+  um caminho de arquivo. As chamadas são opcionais e o AFC é limitado a cinco
   chamadas remotas por passagem.
 - O agente não possui shell, acesso genérico ao filesystem nem MCP. Function
   calling é usado como uma fronteira explícita de capacidade, não como acesso
