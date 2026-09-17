@@ -130,6 +130,7 @@ async def test_upload_reuses_completed_record_with_same_content(tmp_path: Path) 
     cached = valid_document_record()
     cached.document_id = f"sha256:{digest}"
     cached.source_document.sha256 = digest
+    cached.source_document.file_name = "primeira_versao.pdf"
     registry = MemoryDocumentRegistry()
     registry.claims[digest] = ("COMPLETED", cached)
     pipeline = StubPipeline(registry)
@@ -143,6 +144,11 @@ async def test_upload_reuses_completed_record_with_same_content(tmp_path: Path) 
     assert response.status_code == 200
     assert pipeline.received == []
     assert response.json()["uploads"][0]["disposition"] == "REUSED"
+    assert response.json()["uploads"][0]["file_name"] == "novo_nome.pdf"
+    assert (
+        response.json()["uploads"][0]["existing_file_name"]
+        == "primeira_versao.pdf"
+    )
     assert response.json()["records"][0]["document_id"] == f"sha256:{digest}"
     assert (settings.input_dir / "novo_nome.pdf").is_file()
 

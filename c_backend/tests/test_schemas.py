@@ -62,13 +62,14 @@ def test_not_disclosed_can_have_high_percentage_confidence() -> None:
     assert field.confidence == 95
 
 
-def test_ratio_rejects_zero_values() -> None:
-    with pytest.raises(ValidationError):
-        RatioValue(
-            kind=RatioKind.RESULTING_PER_EXISTING,
-            numerator=Decimal("0"),
-            denominator=Decimal("10"),
-        )
+def test_ratio_accepts_invalid_values_for_auditable_validation() -> None:
+    ratio = RatioValue(
+        kind=RatioKind.RESULTING_PER_EXISTING,
+        numerator=Decimal("0"),
+        denominator=Decimal("10"),
+    )
+
+    assert ratio.numerator == 0
 
 
 def test_models_reject_unknown_properties() -> None:

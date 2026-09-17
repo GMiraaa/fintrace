@@ -286,9 +286,15 @@ média dos percentuais dos campos materiais; ausências contribuem com zero. A
 o cálculo auditável e um score abaixo de 75 exige revisão humana. O percentual
 não representa uma probabilidade estatística produzida pela LLM.
 
-Com chave configurada, há duas tentativas `BASIC_LLM`. `STRONG_LLM` é a terceira
-passagem quando qualquer check preliminar falha e possui as function callings.
-`PYTHON` só aparece sem chave ou após indisponibilidade de todas as tentativas de IA.
+Com chave configurada, há duas tentativas `BASIC_LLM`, com acesso opcional a
+`lookup_golden_record`. `STRONG_LLM` é a terceira passagem somente quando algum
+campo material permanece pendente; nesse nível também ficam disponíveis as
+funções controladas de leitura do PDF. O AFC é limitado a três chamadas remotas
+por passagem e nenhuma tool deve ser chamada quando o texto normalizado basta.
+`PYTHON` só aparece sem chave ou quando todas as tentativas de IA falham antes
+de produzir uma resposta estruturada válida. Uma resposta válida, mas
+insuficiente, não é mascarada pela contingência; os erros anteriores continuam
+registrados em `extraction_attempts`.
 
 ```json
 {
@@ -416,7 +422,8 @@ imutáveis de `processing_artifacts`.
   },
   "uploads": [
     {
-      "file_name": "aviso.pdf",
+      "file_name": "aviso_copia.pdf",
+      "existing_file_name": "aviso_original.pdf",
       "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "disposition": "REUSED",
       "message": "Documento já processado; resultado anterior reutilizado sem nova chamada à IA."
@@ -432,6 +439,9 @@ As disposições possíveis são:
 - `DUPLICATE_IN_BATCH`: outro arquivo do mesmo lote possui bytes idênticos;
 - `ALREADY_PROCESSING`: outra requisição já reservou o SHA-256;
 - `REEVALUATED`: o operador solicitou nova execução para um documento concluído.
+
+Em `REUSED`, `existing_file_name` informa o nome do documento da primeira
+versão salva, permitindo distingui-lo do nome usado no novo upload.
 
 O nome não participa da identidade. A reserva usa a unicidade do SHA-256 no
 PostgreSQL, portanto dois uploads simultâneos do mesmo conteúdo não iniciam duas
@@ -464,6 +474,7 @@ novo artefato histórico; se o documento estiver em `PROCESSING`, a API retorna
 - `FIN_GROSS_NET_TAX_CONSISTENT`
 - `FIN_GROSS_NET_TAX_MISMATCH`
 - `FIN_TAX_DEPENDS_ON_BENEFICIARY`
+- `FIN_TAX_CONDITIONAL_NET_DISCLOSED`
 - `FIN_UNIVERSAL_NET_NOT_APPLICABLE`
 - `FIN_CURRENCY_MISSING`
 - `FIN_RATIO_VALID`, `FIN_RATIO_INVALID`

@@ -1,0 +1,654 @@
+{
+  "schema_version": "2.0",
+  "document_id": "sha256:e49afdf81d2a1e4a74985e78fa0ea3639633cfa19f5dba633a2b545d115153cb",
+  "source_document": {
+    "file_name": "01_energetica_vale_tiete_dividendo.pdf",
+    "sha256": "e49afdf81d2a1e4a74985e78fa0ea3639633cfa19f5dba633a2b545d115153cb",
+    "page_count": 1,
+    "extraction_methods": [
+      "NATIVE_TEXT"
+    ]
+  },
+  "processing_status": "ACCEPTED",
+  "issuer": {
+    "name": {
+      "value": "Energética Vale do Tietê S.A.",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "ENERGÉTICA VALE DO TIETÊ S.A.",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "REF_ISSUER_MATCH",
+          "status": "PASS",
+          "message": "issuer matches the reference record.",
+          "expected": null,
+          "observed": null
+        }
+      ]
+    },
+    "cnpj": {
+      "value": "12.345.678/0001-90",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "CNPJ/ME nº 12.345.678/0001-90",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "REF_CNPJ_MATCH",
+          "status": "PASS",
+          "message": "cnpj matches the reference record.",
+          "expected": null,
+          "observed": null
+        }
+      ]
+    }
+  },
+  "security": {
+    "isin": {
+      "value": "BRTIETACNOR3",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "TIET3 (ISIN BRTIETACNOR3)",
+          "extraction_method": "NATIVE_TEXT"
+        },
+        {
+          "page": 1,
+          "evidence": "(ISIN BRTIETACNOR3)",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "REF_ISIN_MATCH",
+          "status": "PASS",
+          "message": "isin matches the reference record.",
+          "expected": null,
+          "observed": null
+        }
+      ]
+    },
+    "ticker": {
+      "value": "TIET3",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "TIET3 (ISIN BRTIETACNOR3)",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "REF_TICKER_MATCH",
+          "status": "PASS",
+          "message": "ticker matches the reference record.",
+          "expected": null,
+          "observed": null
+        }
+      ]
+    },
+    "share_class": {
+      "value": "ON",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "Valor bruto por ação ordinária\n(ON)",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "REF_SHARE_CLASS_MATCH",
+          "status": "PASS",
+          "message": "share_class matches the reference record.",
+          "expected": null,
+          "observed": null
+        }
+      ]
+    },
+    "listing_segment": {
+      "value": "Novo Mercado",
+      "status": "REFERENCE_ENRICHED",
+      "origin": "REFERENCE",
+      "confidence": 95,
+      "agent_agreement": null,
+      "sources": [],
+      "validation": []
+    },
+    "asset_status": {
+      "value": "ativo",
+      "status": "REFERENCE_ENRICHED",
+      "origin": "REFERENCE",
+      "confidence": 95,
+      "agent_agreement": null,
+      "sources": [],
+      "validation": []
+    }
+  },
+  "corporate_action": {
+    "event_type": {
+      "value": "DIVIDEND",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "Tipo de evento\nDividendo",
+          "extraction_method": "NATIVE_TEXT"
+        },
+        {
+          "page": 1,
+          "evidence": "Dividendo",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "EVENT_CLASSIFICATION_SUPPORTED",
+          "status": "PASS",
+          "message": "No material classification conflict was reported.",
+          "expected": "DIVIDEND",
+          "observed": "DIVIDEND"
+        }
+      ]
+    },
+    "classification_evidence": [
+      {
+        "supports": "DIVIDEND",
+        "rationale": "The notice explicitly describes the distribution as dividends and is titled as payment of dividends.",
+        "source": {
+          "page": 1,
+          "evidence": "AVISO AOS ACIONISTAS — Pagamento de Dividendos",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      },
+      {
+        "supports": "DIVIDEND",
+        "rationale": "Notice title and table explicitly state the event is a dividend payment.",
+        "source": {
+          "page": 1,
+          "evidence": "AVISO AOS ACIONISTAS — Pagamento de Dividendos",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      }
+    ],
+    "classification_conflicts": [],
+    "dates": {
+      "approval_date": {
+        "value": "2026-05-28",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "28/05/2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "DATE_APPROVAL_AFTER_RECORD",
+            "status": "PASS",
+            "message": "Approval date is not after the record date.",
+            "expected": "approval_date <= record_date",
+            "observed": "2026-05-28 > 2026-06-12"
+          }
+        ]
+      },
+      "record_date": {
+        "value": "2026-06-12",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "12/06/2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "DATE_APPROVAL_AFTER_RECORD",
+            "status": "PASS",
+            "message": "Approval date is not after the record date.",
+            "expected": "approval_date <= record_date",
+            "observed": "2026-05-28 > 2026-06-12"
+          },
+          {
+            "rule": "DATE_RECORD_NOT_BEFORE_EX",
+            "status": "PASS",
+            "message": "Record date occurs before the ex-date.",
+            "expected": "record_date < ex_date",
+            "observed": "2026-06-12 / 2026-06-15"
+          },
+          {
+            "rule": "DATE_PAYMENT_BEFORE_RECORD",
+            "status": "PASS",
+            "message": "Payment date is not before the record date.",
+            "expected": "payment_date >= record_date",
+            "observed": "2026-07-03 / 2026-06-12"
+          }
+        ]
+      },
+      "ex_date": {
+        "value": "2026-06-15",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "15/06/2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "DATE_RECORD_NOT_BEFORE_EX",
+            "status": "PASS",
+            "message": "Record date occurs before the ex-date.",
+            "expected": "record_date < ex_date",
+            "observed": "2026-06-12 / 2026-06-15"
+          }
+        ]
+      },
+      "payment_date": {
+        "value": "2026-07-03",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "03/07/2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "DATE_PAYMENT_BEFORE_RECORD",
+            "status": "PASS",
+            "message": "Payment date is not before the record date.",
+            "expected": "payment_date >= record_date",
+            "observed": "2026-07-03 / 2026-06-12"
+          }
+        ]
+      },
+      "credit_date": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      },
+      "fraction_period_start": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      },
+      "fraction_period_end": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      }
+    },
+    "financials": {
+      "gross_amount_per_share": {
+        "value": "0.4275",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "R$ 0,4275000000",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": []
+      },
+      "net_amount_per_share": {
+        "value": null,
+        "status": "NOT_DISCLOSED",
+        "origin": "DOCUMENT",
+        "confidence": 82,
+        "agent_agreement": 50,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "os dividendos estarão\nsujeitos à retenção de Imposto de Renda na Fonte (IRRF) à alíquota de 10% sobre a parcela que exceder\nR$ 50.000,00 mensais por beneficiário pagos por esta Companhia.",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "FIN_TAX_DEPENDS_ON_BENEFICIARY",
+            "status": "WARN",
+            "message": "Tax depends on beneficiary conditions; a universal net amount must not be derived.",
+            "expected": null,
+            "observed": null
+          }
+        ]
+      },
+      "tax_rate_percent": {
+        "value": "10.0",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 79,
+        "agent_agreement": 50,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "retenção de Imposto de Renda na Fonte (IRRF) à alíquota de 10%",
+            "extraction_method": "NATIVE_TEXT"
+          },
+          {
+            "page": 1,
+            "evidence": "à alíquota de 10% sobre a parcela que exceder",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": []
+      },
+      "tax_treatment": {
+        "value": "TAX_DEPENDS_ON_BENEFICIARY",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "sujeitos à retenção de Imposto de Renda na Fonte (IRRF) à alíquota de 10% sobre a parcela que exceder R$ 50.000,00 mensais por beneficiário pagos por esta Companhia.",
+            "extraction_method": "NATIVE_TEXT"
+          },
+          {
+            "page": 1,
+            "evidence": "os dividendos estarão\nsujeitos à retenção de Imposto de Renda na Fonte (IRRF) à alíquota de 10% sobre a parcela que exceder\nR$ 50.000,00 mensais por beneficiário pagos por esta Companhia.",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "FIN_TAX_DEPENDS_ON_BENEFICIARY",
+            "status": "WARN",
+            "message": "Tax depends on beneficiary conditions; a universal net amount must not be derived.",
+            "expected": null,
+            "observed": null
+          }
+        ]
+      },
+      "currency": {
+        "value": "BRL",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "R$ 0,4275000000",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": []
+      },
+      "ratio": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      },
+      "attributed_cost_per_share": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      }
+    }
+  },
+  "extraction_attempts": [
+    {
+      "strategy": "BASIC_LLM",
+      "outcome": "SUFFICIENT",
+      "pass_number": 1,
+      "model": "gemini-3.5-flash-lite",
+      "unresolved_fields": [],
+      "error": null
+    },
+    {
+      "strategy": "BASIC_LLM",
+      "outcome": "SUFFICIENT",
+      "pass_number": 2,
+      "model": "gemini-3.5-flash-lite",
+      "unresolved_fields": [],
+      "error": null
+    }
+  ],
+  "preliminary_checks": [
+    {
+      "code": "REQUIRED_FIELDS",
+      "passed": true,
+      "message": "Todos os campos materiais foram resolvidos."
+    },
+    {
+      "code": "AGENT_CONSENSUS",
+      "passed": false,
+      "message": "Divergência ou ausência de consenso em: corporate_action.financials.net_amount_per_share, corporate_action.financials.tax_rate_percent"
+    },
+    {
+      "code": "EVIDENCE_GROUNDING",
+      "passed": true,
+      "message": "Todas as evidências foram localizadas nas páginas citadas."
+    },
+    {
+      "code": "GOLDEN_VALIDATION",
+      "passed": true,
+      "message": "Identidade confirmada sem conflitos na base de referência."
+    },
+    {
+      "code": "DATE_COHERENCE",
+      "passed": true,
+      "message": "As relações temporais avaliáveis são coerentes."
+    },
+    {
+      "code": "FINANCIAL_COHERENCE",
+      "passed": true,
+      "message": "Os valores financeiros avaliáveis são coerentes."
+    },
+    {
+      "code": "CLASSIFICATION_CONSISTENCY",
+      "passed": true,
+      "message": "A classificação não apresenta contradições materiais."
+    },
+    {
+      "code": "OCR_QUALITY",
+      "passed": true,
+      "message": "As páginas lidas por OCR possuem conteúdo suficiente."
+    }
+  ],
+  "document_confidence": {
+    "score": 94,
+    "completion_percentage": 100,
+    "required_fields": [
+      "issuer.name",
+      "security.isin",
+      "security.ticker",
+      "corporate_action.event_type",
+      "corporate_action.dates.approval_date",
+      "corporate_action.dates.record_date",
+      "corporate_action.dates.ex_date",
+      "corporate_action.dates.payment_date",
+      "corporate_action.financials.gross_amount_per_share",
+      "corporate_action.financials.currency"
+    ],
+    "resolved_fields": [
+      "issuer.name",
+      "security.isin",
+      "security.ticker",
+      "corporate_action.event_type",
+      "corporate_action.dates.approval_date",
+      "corporate_action.dates.record_date",
+      "corporate_action.dates.ex_date",
+      "corporate_action.dates.payment_date",
+      "corporate_action.financials.gross_amount_per_share",
+      "corporate_action.financials.currency"
+    ],
+    "missing_fields": [],
+    "rationale": "10 de 10 campos materiais foram resolvidos. O score é a média dos percentuais de confiança dos campos materiais; campos ausentes contribuem com zero."
+  },
+  "reference_validation": {
+    "exact_match": true,
+    "matched_by": [
+      "issuer",
+      "cnpj",
+      "isin",
+      "ticker",
+      "share_class"
+    ],
+    "reference_record": {
+      "issuer": "Energética Vale do Tietê S.A.",
+      "cnpj": "12.345.678/0001-90",
+      "isin": "BRTIETACNOR3",
+      "ticker": "TIET3",
+      "share_class": "ON",
+      "listing_segment": "Novo Mercado",
+      "status": "ativo"
+    },
+    "conflicts": [],
+    "possible_matches": []
+  },
+  "validations": [
+    {
+      "rule": "REF_ISSUER_MATCH",
+      "status": "PASS",
+      "message": "issuer matches the reference record.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "REF_CNPJ_MATCH",
+      "status": "PASS",
+      "message": "cnpj matches the reference record.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "REF_ISIN_MATCH",
+      "status": "PASS",
+      "message": "isin matches the reference record.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "REF_TICKER_MATCH",
+      "status": "PASS",
+      "message": "ticker matches the reference record.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "REF_SHARE_CLASS_MATCH",
+      "status": "PASS",
+      "message": "share_class matches the reference record.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "DATE_APPROVAL_AFTER_RECORD",
+      "status": "PASS",
+      "message": "Approval date is not after the record date.",
+      "expected": "approval_date <= record_date",
+      "observed": "2026-05-28 > 2026-06-12"
+    },
+    {
+      "rule": "DATE_RECORD_NOT_BEFORE_EX",
+      "status": "PASS",
+      "message": "Record date occurs before the ex-date.",
+      "expected": "record_date < ex_date",
+      "observed": "2026-06-12 / 2026-06-15"
+    },
+    {
+      "rule": "DATE_PAYMENT_BEFORE_RECORD",
+      "status": "PASS",
+      "message": "Payment date is not before the record date.",
+      "expected": "payment_date >= record_date",
+      "observed": "2026-07-03 / 2026-06-12"
+    },
+    {
+      "rule": "FIN_TAX_DEPENDS_ON_BENEFICIARY",
+      "status": "WARN",
+      "message": "Tax depends on beneficiary conditions; a universal net amount must not be derived.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "EVENT_CLASSIFICATION_SUPPORTED",
+      "status": "PASS",
+      "message": "No material classification conflict was reported.",
+      "expected": "DIVIDEND",
+      "observed": "DIVIDEND"
+    }
+  ],
+  "review": {
+    "required": false,
+    "reasons": []
+  },
+  "follow_up": {
+    "required": false,
+    "reasons": []
+  },
+  "exceptions": []
+}

@@ -20,6 +20,7 @@ def route_for_review(record: DocumentRecord) -> DocumentRecord:
         record.extraction_attempts
         and record.extraction_attempts[-1].outcome
         is not ExtractionAttemptOutcome.SUFFICIENT
+        and record.extraction_attempts[-1].unresolved_fields
     ):
         review_reasons.append(
             _reason(

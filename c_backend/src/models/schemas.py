@@ -96,8 +96,11 @@ class EventDates(StrictModel):
 
 class RatioValue(StrictModel):
     kind: RatioKind
-    numerator: Decimal = Field(gt=0)
-    denominator: Decimal = Field(gt=0)
+    # Values are intentionally unconstrained at the transport boundary. Invalid
+    # ratios must become auditable FIN_RATIO_INVALID results instead of aborting
+    # the whole document before deterministic validation and human routing.
+    numerator: Decimal
+    denominator: Decimal
     percentage: Decimal | None = Field(default=None, ge=0)
 
 

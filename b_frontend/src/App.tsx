@@ -5,7 +5,12 @@ import { ResultsWorkspace } from './components/ResultsWorkspace'
 import { Topbar } from './components/Topbar'
 import { TracePreview } from './components/TracePreview'
 import { UploadPanel } from './components/UploadPanel'
-import type { BatchUploadResponse, HealthResponse } from './types'
+import type {
+  BatchUploadResponse,
+  ExceptionReportDocument,
+  HealthResponse,
+  ProcessingStatus,
+} from './types'
 
 type AppState = 'idle' | 'processing' | 'done' | 'error'
 
@@ -83,7 +88,9 @@ function App() {
     setState('processing')
     setError('')
     try {
-      setResult(await uploadDocuments(files))
+      const response = await uploadDocuments(files)
+      setResult((current) => mergeBatchResults(current, response))
+      setFiles([])
       setState('done')
     } catch (requestError: unknown) {
       setError(requestError instanceof Error ? requestError.message : 'Não foi possível processar os documentos.')
@@ -95,7 +102,8 @@ function App() {
     setReevaluatingDocumentId(documentId)
     setError('')
     try {
-      setResult(await reevaluateDocument(documentId))
+      const response = await reevaluateDocument(documentId)
+      setResult((current) => mergeBatchResults(current, response))
     } catch (requestError: unknown) {
       setError(requestError instanceof Error ? requestError.message : 'Não foi possível reavaliar o documento.')
     } finally {
@@ -129,6 +137,56 @@ function App() {
       </main>
     </div>
   )
+}
+
+function mergeBatchResults(
+  current: BatchUploadResponse | null,
+  incoming: BatchUploadResponse,
+): BatchUploadResponse {
+  if (!current) return incoming
+
+  const records = mergeByDocumentId(current.records, incoming.records)
+  const documents = mergeByDocumentId(
+    current.report.documents,
+    incoming.report.documents,
+  )
+
+  return {
+    records,
+    report: {
+      schema_version: incoming.report.schema_version,
+      summary: summarizeDocuments(documents),
+      documents,
+    },
+    // Upload messages describe the latest interaction. Keeping old messages
+    // would make a reused-document warning look current after later uploads.
+    uploads: incoming.uploads,
+  }
+}
+
+function mergeByDocumentId<T extends { document_id: string }>(
+  current: T[],
+  incoming: T[],
+): T[] {
+  const replacements = new Map(incoming.map((item) => [item.document_id, item]))
+  const currentIds = new Set(current.map((item) => item.document_id))
+  return [
+    ...current.map((item) => replacements.get(item.document_id) ?? item),
+    ...incoming.filter((item) => !currentIds.has(item.document_id)),
+  ]
+}
+
+function summarizeDocuments(documents: ExceptionReportDocument[]) {
+  const count = (status: ProcessingStatus) => (
+    documents.filter((document) => document.processing_status === status).length
+  )
+  return {
+    processed: documents.length,
+    accepted: count('ACCEPTED'),
+    human_review: count('REVIEW_REQUIRED'),
+    pending_information: count('PENDING_INFORMATION'),
+    failed: count('FAILED'),
+  }
 }
 
 export default App

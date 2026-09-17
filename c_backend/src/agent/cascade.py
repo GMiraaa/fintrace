@@ -70,7 +70,6 @@ class CascadingCorporateActionExtractor:
         attempts: list[ExtractionAttempt] = []
         responses: list[AgentExtraction] = []
         model_attempts = 0
-        unavailable_attempts = 0
 
         if self.basic_agent is not None:
             for _pass_number in range(1, self.basic_passes + 1):
@@ -103,7 +102,6 @@ class CascadingCorporateActionExtractor:
                         error=str(exc),
                     )
                 except AgentProviderUnavailableError as exc:
-                    unavailable_attempts += 1
                     current_attempt = _failed_attempt(
                         ExtractionStrategy.BASIC_LLM,
                         extraction,
@@ -126,7 +124,11 @@ class CascadingCorporateActionExtractor:
             document,
             responses,
         )
-        needs_strong_model = any(not check.passed for check in preliminary_checks)
+        # The strong model is an extraction fallback, not a generic reviewer.
+        # Escalate only while a material field required for this event remains
+        # unresolved after the two basic passes. Other preliminary findings are
+        # retained for audit and handled by deterministic validation/routing.
+        needs_strong_model = bool(assess_unresolved_fields(extraction))
 
         if self.strong_agent is not None and needs_strong_model:
             model_attempts += 1
@@ -161,7 +163,6 @@ class CascadingCorporateActionExtractor:
                     error=str(exc),
                 )
             except AgentProviderUnavailableError as exc:
-                unavailable_attempts += 1
                 current_attempt = _failed_attempt(
                     ExtractionStrategy.STRONG_LLM,
                     extraction,
@@ -179,16 +180,20 @@ class CascadingCorporateActionExtractor:
                 )
             attempts.append(current_attempt)
 
-        if model_attempts > 0 and unavailable_attempts == model_attempts:
+        # Provider/configuration errors must not turn the entire extraction into
+        # an empty record.  Keep every failed LLM attempt for auditability, but
+        # use the deterministic extractor whenever no model returned a valid
+        # structured response at all.  A valid yet incomplete model response is
+        # intentionally not hidden by this fallback and remains reviewable.
+        if model_attempts > 0 and not responses:
             return self._extract_with_python(document, attempts=attempts)
         return ExtractionRun(
             extraction=extraction,
             attempts=attempts,
             preliminary_checks=preliminary_checks,
-            agreement_scores=calculate_agreement_scores(
-                responses,
-                expected_count=model_attempts,
-            ),
+            # Provider failures are operational errors, not disagreements about
+            # extracted values. Agreement is calculated only from valid replies.
+            agreement_scores=calculate_agreement_scores(responses),
         )
 
     def _run_preliminary_checks(

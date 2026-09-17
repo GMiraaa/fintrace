@@ -13,11 +13,11 @@ import {
   MATCH_FIELD_LABELS,
   ORIGIN_LABELS,
   PRELIMINARY_CHECK_LABELS,
-  REASON_LABELS,
   STATUS_LABELS,
   VALIDATION_RULE_LABELS,
   VALIDATION_STATUS_LABELS,
 } from '../constants'
+import { summarizeRoutingReasons } from '../routingReasons'
 import { formatValue } from '../utils/formatters'
 import { DocumentThumbnail } from './DocumentThumbnail'
 import { Icon } from './Icon'
@@ -32,7 +32,6 @@ import type {
   ProcessingStatus,
   RatioValue,
   ReferenceValidation as ReferenceValidationType,
-  RoutingReason,
   ValidationResult,
   ValidationStatus,
 } from '../types'
@@ -160,7 +159,7 @@ function DecisionPanel({ record }: { record: DocumentRecord }) {
           <progress aria-label="Confiança do documento" max="100" value={documentConfidence.score} />
           <small>{documentConfidence.completion_percentage}% dos campos materiais foram coletados.{documentConfidence.missing_fields.length > 0 ? ` Pendentes: ${documentConfidence.missing_fields.map(fieldPathLabel).join(', ')}.` : ''}</small>
         </div>
-        {reasons.length > 0 && <ul>{reasons.map((reason) => <li key={`${reason.code}:${reason.message}`}>{reasonText(reason)}</li>)}</ul>}
+        {reasons.length > 0 && <ul>{summarizeRoutingReasons(reasons).map((message) => <li key={message}>{message}</li>)}</ul>}
       </div>
       <dl className="document-metadata">
         <div><dt>Páginas</dt><dd>{record.source_document.page_count}</dd></div>
@@ -437,10 +436,6 @@ function confidenceBand(confidence: number): 'strong' | 'attention' | 'critical'
   if (confidence >= 90) return 'strong'
   if (confidence >= 75) return 'attention'
   return 'critical'
-}
-
-function reasonText(reason: RoutingReason): string {
-  return REASON_LABELS[reason.code] || reason.message || 'O registro precisa de conferência.'
 }
 
 function methodLabel(method: ExtractionMethod): string {

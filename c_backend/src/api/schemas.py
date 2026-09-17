@@ -15,6 +15,7 @@ class HealthResponse(StrictModel):
 
 class UploadResult(StrictModel):
     file_name: str
+    existing_file_name: str | None = None
     sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     disposition: Literal[
         "PROCESSED",

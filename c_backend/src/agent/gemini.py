@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
-from pathlib import Path
 from typing import Any
 
 from google import genai
@@ -10,6 +10,7 @@ from google.genai import types
 from src.documents.models import NormalizedDocument
 
 from .schemas import AgentExtraction
+from .toolbox import CorporateActionToolbox
 
 
 class AgentProviderError(RuntimeError):
@@ -31,20 +32,22 @@ class GeminiCorporateActionAgent:
         api_key: str,
         model: str,
         skill_text: str,
-        reference_lookup_tool: Callable[..., str] | None = None,
-        pdf_tools_builder: (
-            Callable[[str | Path], list[Callable[..., str]]] | None
-        ) = None,
+        toolbox: CorporateActionToolbox | None = None,
+        include_pdf_tools: bool = True,
+        max_remote_calls: int = 3,
         client: Any | None = None,
     ) -> None:
         if not api_key and client is None:
             raise ValueError("Gemini API key is required")
         if not model:
             raise ValueError("Gemini model is required")
+        if max_remote_calls < 1:
+            raise ValueError("max_remote_calls must be positive")
         self.model = model
         self.skill_text = skill_text
-        self.reference_lookup_tool = reference_lookup_tool
-        self.pdf_tools_builder = pdf_tools_builder
+        self.toolbox = toolbox
+        self.include_pdf_tools = include_pdf_tools
+        self.max_remote_calls = max_remote_calls
         self.client = client or genai.Client(api_key=api_key)
 
     def extract(self, document: NormalizedDocument) -> AgentExtraction:
@@ -93,28 +96,31 @@ class GeminiCorporateActionAgent:
             "Extract the corporate action notice below. Return every schema field. "
             "Use null plus the most precise status when a value is unavailable. "
             "Evidence must be a verbatim excerpt from the cited page. Do not perform "
-            "arithmetic validation or confidence scoring. When identifiers are present "
-            "and the lookup_golden_record tool is available, call it exactly once to "
-            "check the extracted identity. Use the result only to detect disagreement; "
-            "never present reference data as document evidence.\n\n"
+            "arithmetic validation or confidence scoring. Use a tool only when the "
+            "normalized document does not provide enough information to verify the "
+            "field reliably. Do not call tools for fields already supported by explicit "
+            "document evidence. If lookup_golden_record is needed, call it at most once. "
+            "Use its result only to detect disagreement; never present reference data "
+            "as document evidence.\n\n"
             f"DOCUMENT: {document.file_name}\n\n{document.as_prompt_text()}"
         )
         if context:
             prompt = f"{prompt}\n\nESCALATION CONTEXT:\n{context}"
-        tools: list[Callable[..., str]] = []
-        if self.reference_lookup_tool is not None:
-            tools.append(self.reference_lookup_tool)
-        if self.pdf_tools_builder is not None and document.source_path:
-            tools.extend(self.pdf_tools_builder(document.source_path))
-            tool_requirement = (
-                "This is an escalation: call at least one PDFPLUMBER tool before "
-                "returning the final structure, choosing the operation that best "
-                "addresses the unresolved fields. "
-                if context
-                else ""
+        tools: list[Callable[..., str]] = (
+            self.toolbox.tools_for(
+                document,
+                include_pdf_tools=self.include_pdf_tools,
             )
+            if self.toolbox is not None
+            else []
+        )
+        if (
+            self.include_pdf_tools
+            and self.toolbox is not None
+            and document.source_path
+        ):
             prompt = (
-                f"{prompt}\n\nPDFPLUMBER TOOLS: {tool_requirement}Use these tools when the "
+                f"{prompt}\n\nPDFPLUMBER TOOLS: Use these tools only when the "
                 "normalized text is insufficient, ambiguous, or loses table/layout "
                 "relationships. Tool results are document evidence; cite the returned "
                 "page number. Do not invent evidence from coordinates alone."
@@ -126,17 +132,23 @@ class GeminiCorporateActionAgent:
                 config=types.GenerateContentConfig(
                     system_instruction=self.skill_text,
                     response_mime_type="application/json",
-                    response_schema=AgentExtraction,
+                    response_schema=_gemini_response_schema(),
                     temperature=0,
                     tools=tools or None,
+                    automatic_function_calling=types.AutomaticFunctionCallingConfig(
+                        maximum_remote_calls=self.max_remote_calls,
+                    ),
                 ),
             )
         except Exception as exc:
+            detail = _safe_provider_error_detail(exc)
             if _provider_is_temporarily_unavailable(exc):
                 raise AgentProviderUnavailableError(
-                    "Gemini is temporarily unavailable"
+                    f"Gemini is temporarily unavailable ({detail})"
                 ) from exc
-            raise AgentProviderError("Gemini extraction request failed") from exc
+            raise AgentProviderError(
+                f"Gemini extraction request failed ({detail})"
+            ) from exc
 
         parsed = getattr(response, "parsed", None)
         if isinstance(parsed, AgentExtraction):
@@ -170,3 +182,42 @@ def _provider_is_temporarily_unavailable(error: Exception) -> bool:
     return isinstance(error, (ConnectionError, TimeoutError, OSError)) or any(
         marker in error_name for marker in ("timeout", "connection", "servererror")
     )
+
+
+def _gemini_response_schema() -> dict[str, Any]:
+    """Return the extraction schema without unsupported Gemini keywords.
+
+    Pydantic emits ``additionalProperties: false`` for the strict extraction
+    models. The GenerateContent API rejects that keyword even though strict
+    validation remains useful when parsing the returned payload locally.
+    """
+    schema = AgentExtraction.model_json_schema()
+    _remove_schema_keyword(schema, "additionalProperties")
+    return schema
+
+
+def _remove_schema_keyword(value: Any, keyword: str) -> None:
+    if isinstance(value, dict):
+        value.pop(keyword, None)
+        for child in value.values():
+            _remove_schema_keyword(child, keyword)
+    elif isinstance(value, list):
+        for child in value:
+            _remove_schema_keyword(child, keyword)
+
+
+def _safe_provider_error_detail(error: Exception) -> str:
+    """Expose an actionable provider error without leaking credentials."""
+    status = getattr(error, "status_code", None) or getattr(error, "code", None)
+    message = getattr(error, "message", None) or str(error)
+    detail = f"{type(error).__name__}"
+    if status is not None:
+        detail += f" status={status}"
+    if message:
+        sanitized = re.sub(
+            r"(?i)((?:api[_-]?key|key|token)=)[^&\s]+",
+            r"\1<redacted>",
+            str(message),
+        )
+        detail += f": {sanitized[:500]}"
+    return detail

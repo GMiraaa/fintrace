@@ -1,9 +1,35 @@
 from decimal import Decimal
 
-from src.models.enums import TaxTreatment, ValidationStatus
+from src.models.enums import Origin, TaxTreatment, ValidationStatus
 from src.models.schemas import Financials, ValidationResult
 
 DEFAULT_FINANCIAL_TOLERANCE = Decimal("0.0000005")
+
+
+def _validate_gross_net_tax(
+    gross: Decimal,
+    net: Decimal,
+    tax_rate: Decimal,
+    tolerance: Decimal,
+) -> ValidationResult:
+    expected_net = gross * (Decimal("1") - tax_rate / Decimal("100"))
+    difference = abs(net - expected_net)
+    valid = difference <= tolerance
+    return ValidationResult(
+        rule=(
+            "FIN_GROSS_NET_TAX_CONSISTENT"
+            if valid
+            else "FIN_GROSS_NET_TAX_MISMATCH"
+        ),
+        status=ValidationStatus.PASS if valid else ValidationStatus.FAIL,
+        message=(
+            "Gross, tax rate, and net amount are mathematically consistent."
+            if valid
+            else "Net amount does not match gross amount after tax."
+        ),
+        expected=str(expected_net),
+        observed=str(net),
+    )
 
 
 def validate_financial_values(
@@ -31,39 +57,46 @@ def validate_financial_values(
             )
         )
         if net is not None:
-            results.append(
-                ValidationResult(
-                    rule="FIN_UNIVERSAL_NET_NOT_APPLICABLE",
-                    status=ValidationStatus.FAIL,
-                    message=(
-                        "A universal net amount is incompatible with beneficiary-"
-                        "dependent taxation unless explicitly qualified."
-                    ),
-                    expected=None,
-                    observed=str(net),
+            net_is_explicitly_disclosed = (
+                financials.net_amount_per_share.origin is Origin.DOCUMENT
+                and bool(financials.net_amount_per_share.sources)
+            )
+            if net_is_explicitly_disclosed:
+                results.append(
+                    ValidationResult(
+                        rule="FIN_TAX_CONDITIONAL_NET_DISCLOSED",
+                        status=ValidationStatus.WARN,
+                        message=(
+                            "The net amount is explicitly disclosed for the stated "
+                            "withholding rule, but may differ for exempt or immune "
+                            "beneficiaries."
+                        ),
+                        expected=(
+                            "Document-disclosed net amount qualified by beneficiary "
+                            "tax treatment"
+                        ),
+                        observed=str(net),
+                    )
                 )
-            )
+                if gross is not None and tax_rate is not None:
+                    results.append(
+                        _validate_gross_net_tax(gross, net, tax_rate, tolerance)
+                    )
+            else:
+                results.append(
+                    ValidationResult(
+                        rule="FIN_UNIVERSAL_NET_NOT_APPLICABLE",
+                        status=ValidationStatus.FAIL,
+                        message=(
+                            "A universal net amount is incompatible with beneficiary-"
+                            "dependent taxation unless explicitly disclosed."
+                        ),
+                        expected=None,
+                        observed=str(net),
+                    )
+                )
     elif gross is not None and net is not None and tax_rate is not None:
-        expected_net = gross * (Decimal("1") - tax_rate / Decimal("100"))
-        difference = abs(net - expected_net)
-        valid = difference <= tolerance
-        results.append(
-            ValidationResult(
-                rule=(
-                    "FIN_GROSS_NET_TAX_CONSISTENT"
-                    if valid
-                    else "FIN_GROSS_NET_TAX_MISMATCH"
-                ),
-                status=ValidationStatus.PASS if valid else ValidationStatus.FAIL,
-                message=(
-                    "Gross, tax rate, and net amount are mathematically consistent."
-                    if valid
-                    else "Net amount does not match gross amount after tax."
-                ),
-                expected=str(expected_net),
-                observed=str(net),
-            )
-        )
+        results.append(_validate_gross_net_tax(gross, net, tax_rate, tolerance))
 
     has_monetary_value = any(
         value is not None

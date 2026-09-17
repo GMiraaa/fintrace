@@ -212,6 +212,7 @@ export interface BatchUploadResponse {
 
 export interface UploadResult {
   file_name: string
+  existing_file_name?: string | null
   sha256: string
   disposition: 'PROCESSED' | 'REUSED' | 'DUPLICATE_IN_BATCH' | 'ALREADY_PROCESSING' | 'REEVALUATED'
   message: string

@@ -140,7 +140,11 @@ def create_app(
                     _remove_redundant_upload(stored, app_settings.input_dir)
                     cached_records.append(claim.record)
                     upload_results.append(
-                        _upload_result(stored, "REUSED")
+                        _upload_result(
+                            stored,
+                            "REUSED",
+                            existing_file_name=claim.record.source_document.file_name,
+                        )
                     )
                 else:
                     _remove_redundant_upload(stored, app_settings.input_dir)
@@ -242,6 +246,8 @@ def create_app(
 def _upload_result(
     stored: StoredUpload,
     disposition: Literal["PROCESSED", "REUSED", "ALREADY_PROCESSING"],
+    *,
+    existing_file_name: str | None = None,
 ) -> UploadResult:
     messages = {
         "PROCESSED": (
@@ -258,6 +264,7 @@ def _upload_result(
     }
     return UploadResult(
         file_name=stored.original_file_name,
+        existing_file_name=existing_file_name,
         sha256=stored.sha256,
         disposition=disposition,
         message=messages[disposition],

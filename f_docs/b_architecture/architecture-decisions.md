@@ -17,6 +17,7 @@ flowchart TB
         ORCH[Pipeline]
         PRE[Normalização e OCR]
         EXT[Cascata de extração]
+        TOOLBOX[CorporateActionToolbox]
         VAL[Validações determinísticas]
         CR[Confiança e roteamento]
     end
@@ -43,11 +44,14 @@ flowchart TB
     INPUT --> PRE --> ORCH
     ORCH --> EXT
     EXT --> BASIC1 --> BASIC2 --> CHECKS
-    CHECKS -. qualquer check falha .-> STRONG
-    CHECKS -. checks aprovados .-> VAL
+    CHECKS -. campo material pendente .-> STRONG
+    CHECKS -. campos materiais resolvidos .-> VAL
     BASIC2 -. provider indisponível .-> STRONG
-    STRONG -. todas as tentativas indisponíveis .-> PY
-    STRONG --> FC
+    STRONG -. nenhuma resposta estruturada válida .-> PY
+    BASIC1 --> TOOLBOX
+    BASIC2 --> TOOLBOX
+    STRONG --> TOOLBOX
+    TOOLBOX --> FC
     FC --> GOLDEN
     FC --> INPUT
     ORCH --> VAL --> CR --> OUTPUT
@@ -72,10 +76,11 @@ flowchart TB
 ## Limites arquiteturais
 
 - Com chave configurada, todo documento passa por duas análises independentes da
-  LLM básica. A LLM forte é a terceira passagem quando há campo ausente,
-  discordância, evidência inválida, conflito de referência, falha temporal ou
-  financeira, classificação contraditória ou OCR fraco. Python só extrai quando
-  não há chave ou todas as tentativas de IA estão indisponíveis.
+  LLM básica. A LLM forte é a terceira passagem somente quando um campo material
+  permanece ausente, ilegível, ambíguo ou em conflito. Os demais checks seguem
+  para validação e roteamento determinísticos. Python só extrai quando
+  não há chave ou todas as tentativas de IA falham sem produzir uma resposta
+  estruturada válida.
 - Regras matemáticas, temporais, de referência, confiança e roteamento são
   executadas em Python.
 - A integração com a LLM usa uma interface pequena e mockável, sem LangChain.
@@ -83,12 +88,18 @@ flowchart TB
   complementar `.skills/b_backend_skills/.agents/skills/pdf-extraction`. Esta
   orienta a interpretação de estrutura e tabelas, mas não substitui o
   pré-processamento determinístico do backend.
-- Ao acionar o modelo forte, o SDK expõe `lookup_golden_record` como function calling.
-  O agente usa a consulta para detectar divergências, enquanto o pipeline repete
-  a validação deterministicamente e permanece como autoridade final.
-- O SDK também expõe `extract_pdf_text`, `extract_pdf_tables` e
-  `inspect_pdf_words`. Essas funções são closures vinculadas ao PDF atual: o
-  modelo pode escolher a operação e a página, mas não um caminho de arquivo.
+- O SDK expõe `lookup_golden_record` aos modelos básico e forte como function
+  calling. Cada passagem pode detectar divergências de identidade, enquanto o
+  pipeline repete a validação deterministicamente e permanece como autoridade
+  final.
+- A `CorporateActionToolbox` é o catálogo único das capacidades oferecidas aos
+  providers. A mesma instância seleciona somente referência para o nível básico
+  e referência mais leitura do PDF para o forte.
+- Somente o modelo forte recebe `extract_pdf_text`, `extract_pdf_tables` e
+  `inspect_pdf_words`. Essas funções são closures
+  vinculadas ao PDF atual: o modelo pode escolher a operação e a página, mas não
+  um caminho de arquivo. As chamadas são opcionais e o AFC é limitado a três
+  chamadas remotas por passagem.
 - O agente não possui shell, acesso genérico ao filesystem nem MCP. Function
   calling é usado como uma fronteira explícita de capacidade, não como acesso
   irrestrito ao ambiente.
@@ -171,6 +182,10 @@ flowchart TB
 - **Cascata explícita:** duas passagens básicas, checks preliminares, eventual
   veredito forte e contingência Python têm ordem e critérios observáveis; uma
   LLM não decide quando outra é chamada.
+- **Toolbox separada do provider:** o adaptador Gemini cuida da chamada ao
+  modelo, enquanto a toolbox organiza as funções disponíveis e sua política de
+  exposição. Isso evita espalhar construção de tools pela composição da API e
+  pelo provider.
 - **Validação posterior à extração:** mesmo quando a LLM consulta a referência,
   o pipeline repete o cruzamento e continua sendo a autoridade final.
 - **Modelos Pydantic compartilhados:** API, persistência, validação e frontend

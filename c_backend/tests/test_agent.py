@@ -1,7 +1,11 @@
 from pathlib import Path
 from types import SimpleNamespace
 
-from src.agent.gemini import GeminiCorporateActionAgent
+from src.agent.gemini import (
+    AgentProviderError,
+    GeminiCorporateActionAgent,
+    _gemini_response_schema,
+)
 from src.agent.mapping import extraction_to_document_record
 from src.agent.schemas import (
     AgentExtraction,
@@ -91,6 +95,43 @@ def test_gemini_adapter_accepts_parsed_response() -> None:
     assert result.corporate_action.event_type.value is EventType.JCP
 
 
+def test_agent_schema_avoids_constraints_unsupported_by_gemini_sdk() -> None:
+    schema = _gemini_response_schema()
+
+    assert "exclusiveMinimum" not in str(schema)
+    assert "additionalProperties" not in str(schema)
+
+
+def test_gemini_adapter_preserves_sanitized_provider_error_detail() -> None:
+    class ProviderFailure(Exception):
+        status_code = 400
+        message = "invalid request api_key=secret-value"
+
+    agent = GeminiCorporateActionAgent(
+        api_key="",
+        model="test-model",
+        skill_text="test skill",
+        client=SimpleNamespace(
+            models=SimpleNamespace(
+                generate_content=lambda **_kwargs: (_ for _ in ()).throw(
+                    ProviderFailure()
+                )
+            )
+        ),
+    )
+
+    try:
+        agent.extract(normalized_document())
+    except AgentProviderError as error:
+        message = str(error)
+    else:
+        raise AssertionError("AgentProviderError was not raised")
+
+    assert "ProviderFailure status=400" in message
+    assert "api_key=<redacted>" in message
+    assert "secret-value" not in message
+
+
 def test_gemini_consensus_passes_use_independent_instructions() -> None:
     prompts = []
 
@@ -129,11 +170,14 @@ def test_gemini_adapter_exposes_reference_function_calling_tool() -> None:
     client = SimpleNamespace(
         models=SimpleNamespace(generate_content=generate_content)
     )
+    toolbox = SimpleNamespace(
+        tools_for=lambda _document, **_kwargs: [lookup_golden_record]
+    )
     agent = GeminiCorporateActionAgent(
         api_key="",
         model="test-model",
         skill_text="test skill",
-        reference_lookup_tool=lookup_golden_record,
+        toolbox=toolbox,
         client=client,
     )
 
@@ -157,20 +201,20 @@ def test_gemini_adapter_exposes_pdf_tools_bound_to_current_document(
         received.update(kwargs)
         return response
 
-    def build_tools(path: str):
-        assert path == str(pdf_path)
+    def extract_pdf_text(page_start: int = 1) -> str:
+        """Extrai texto do PDF atual."""
+        return str(page_start)
 
-        def extract_pdf_text(page_start: int = 1) -> str:
-            """Extrai texto do PDF atual."""
-            return str(page_start)
-
+    def tools_for(bound_document, *, include_pdf_tools):
+        assert bound_document.source_path == str(pdf_path)
+        assert include_pdf_tools is True
         return [extract_pdf_text]
 
     agent = GeminiCorporateActionAgent(
         api_key="",
         model="test-model",
         skill_text="test skill",
-        pdf_tools_builder=build_tools,
+        toolbox=SimpleNamespace(tools_for=tools_for),
         client=SimpleNamespace(
             models=SimpleNamespace(generate_content=generate_content)
         ),
@@ -185,7 +229,9 @@ def test_gemini_adapter_exposes_pdf_tools_bound_to_current_document(
     assert "source_path" not in document.model_dump()
 
 
-def test_strong_agent_requires_pdf_tool_during_escalation(tmp_path: Path) -> None:
+def test_strong_agent_keeps_pdf_tools_optional_during_escalation(
+    tmp_path: Path,
+) -> None:
     received = {}
     pdf_path = tmp_path / "notice.pdf"
     pdf_path.write_bytes(b"pdf")
@@ -196,11 +242,15 @@ def test_strong_agent_requires_pdf_tool_during_escalation(tmp_path: Path) -> Non
     def extract_pdf_text(page_start: int = 1) -> str:
         return str(page_start)
 
+    toolbox = SimpleNamespace(
+        tools_for=lambda _document, **_kwargs: [extract_pdf_text]
+    )
+
     agent = GeminiCorporateActionAgent(
         api_key="",
         model="strong-model",
         skill_text="test skill",
-        pdf_tools_builder=lambda _path: [extract_pdf_text],
+        toolbox=toolbox,
         client=SimpleNamespace(
             models=SimpleNamespace(
                 generate_content=lambda **kwargs: (
@@ -217,7 +267,43 @@ def test_strong_agent_requires_pdf_tool_during_escalation(tmp_path: Path) -> Non
         unresolved_fields=["issuer.name"],
     )
 
-    assert "call at least one PDFPLUMBER tool" in received["contents"]
+    assert "Use these tools only when" in received["contents"]
+    assert "call at least one PDFPLUMBER tool" not in received["contents"]
+    assert received["config"].automatic_function_calling.maximum_remote_calls == 3
+
+
+def test_basic_agent_can_disable_pdf_tools(tmp_path: Path) -> None:
+    received = {}
+    pdf_path = tmp_path / "notice.pdf"
+    pdf_path.write_bytes(b"pdf")
+    document = normalized_document().model_copy(
+        update={"source_path": str(pdf_path)}
+    )
+
+    def tools_for(_document, *, include_pdf_tools):
+        assert include_pdf_tools is False
+        return []
+
+    agent = GeminiCorporateActionAgent(
+        api_key="",
+        model="basic-model",
+        skill_text="test skill",
+        toolbox=SimpleNamespace(tools_for=tools_for),
+        include_pdf_tools=False,
+        client=SimpleNamespace(
+            models=SimpleNamespace(
+                generate_content=lambda **kwargs: (
+                    received.update(kwargs)
+                    or SimpleNamespace(parsed=AgentExtraction(), text=None)
+                )
+            )
+        ),
+    )
+
+    agent.extract(document)
+
+    assert received["config"].tools is None
+    assert "PDFPLUMBER TOOLS" not in received["contents"]
 
 
 def test_skill_loader_includes_required_references() -> None:

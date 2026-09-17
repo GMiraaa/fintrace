@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import type { ChangeEvent, DragEvent } from 'react'
 
 import { formatBytes } from '../utils/formatters'
@@ -15,6 +15,10 @@ interface UploadPanelProps {
 
 export function UploadPanel({ error, files, onAddFiles, onProcess, onRemoveFile, state }: UploadPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!files.length && inputRef.current) inputRef.current.value = ''
+  }, [files.length])
 
   function handleDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault()

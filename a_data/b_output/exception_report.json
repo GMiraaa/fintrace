@@ -1,0 +1,40 @@
+{
+  "schema_version": "2.0",
+  "summary": {
+    "processed": 1,
+    "accepted": 0,
+    "human_review": 1,
+    "pending_information": 0,
+    "failed": 0
+  },
+  "documents": [
+    {
+      "document_id": "sha256:a21a294ac3ededbb6fdef195be0edb0572069544e0b73f6fc1918fa77d6b0e85",
+      "file_name": "03_siderurgica_paranaense_proventos.pdf",
+      "processing_status": "REVIEW_REQUIRED",
+      "confidence_score": 76,
+      "exceptions": [
+        {
+          "code": "EXTRACTION_CASCADE_EXHAUSTED",
+          "category": "REVIEW_EXCEPTION",
+          "message": "The extraction cascade ended with unresolved critical fields."
+        },
+        {
+          "code": "TITLE_BODY_CLASSIFICATION_CONFLICT",
+          "category": "REVIEW_EXCEPTION",
+          "message": "Material classification evidence is contradictory."
+        },
+        {
+          "code": "CRITICAL_FIELD_CONFIDENCE_BELOW_THRESHOLD",
+          "category": "REVIEW_EXCEPTION",
+          "message": "Critical field confidence is below 75%: issuer.name (10%)."
+        },
+        {
+          "code": "CRITICAL_FIELD_CONFIDENCE_BELOW_THRESHOLD",
+          "category": "REVIEW_EXCEPTION",
+          "message": "Critical field confidence is below 75%: corporate_action.event_type (15%)."
+        }
+      ]
+    }
+  ]
+}

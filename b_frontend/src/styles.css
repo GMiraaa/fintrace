@@ -113,9 +113,15 @@ h1 { font-size: clamp(2.25rem, 4.5vw, 3.875rem); font-weight: 610; letter-spacin
 .results-heading .section-context { margin-bottom: 7px; }
 .results-heading > div > p:last-child { color: var(--muted); font-size: 0.875rem; line-height: 1.5; margin: 9px 0 0; max-width: 720px; }
 .batch-overview { align-items: center; background: var(--blue-dark); color: #fff; display: grid; gap: 26px; grid-template-columns: auto minmax(0, 1fr) auto; padding: 22px 24px; }
-.reuse-notice { align-items: flex-start; background: #edf5fe; border: 1px solid #bed7ef; border-top: 0; display: flex; gap: 12px; padding: 14px 18px; }
-.reuse-notice strong { display: block; font-size: 0.75rem; }
-.reuse-notice p { color: var(--muted); font-size: 0.6875rem; margin: 4px 0 0; }
+.reuse-notice { align-items: flex-start; background: #fff; border: 1px solid #9ecfbe; border-left: 6px solid var(--success); box-shadow: 0 12px 30px rgba(8, 123, 104, .12); display: flex; gap: 14px; margin-bottom: 22px; padding: 18px 20px; }
+.reuse-notice__icon { align-items: center; background: var(--success-soft); color: var(--success); display: flex; height: 42px; justify-content: center; width: 42px; }
+.reuse-notice__eyebrow { color: var(--success); display: block; font-size: 0.625rem; font-weight: 750; letter-spacing: .04em; margin-bottom: 3px; text-transform: uppercase; }
+.reuse-notice strong { display: block; font-size: 0.9375rem; }
+.reuse-notice p { color: var(--muted); font-size: 0.75rem; line-height: 1.45; margin: 7px 0 0; }
+.reuse-notice p b { color: var(--ink); }
+.upload-notice { align-items: flex-start; background: #edf5fe; border: 1px solid #bed7ef; border-top: 0; display: flex; gap: 12px; padding: 14px 18px; }
+.upload-notice strong { display: block; font-size: 0.75rem; }
+.upload-notice p { color: var(--muted); font-size: 0.6875rem; margin: 4px 0 0; }
 .batch-total { border-right: 1px solid #34577f; display: flex; flex-direction: column; min-width: 145px; padding-right: 24px; }
 .batch-total strong { font-size: 2.125rem; font-weight: 610; line-height: 1; }
 .batch-total span { color: #afc7e1; font-size: 0.6875rem; margin-top: 5px; }

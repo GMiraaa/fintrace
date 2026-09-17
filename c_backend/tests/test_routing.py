@@ -107,6 +107,28 @@ def test_exhausted_extraction_cascade_requires_review() -> None:
     )
 
 
+def test_failed_optional_escalation_does_not_force_review() -> None:
+    record = valid_document_record()
+    record.extraction_attempts = [
+        ExtractionAttempt(
+            strategy=ExtractionStrategy.STRONG_LLM,
+            outcome=ExtractionAttemptOutcome.ERROR,
+            model="modelo-forte",
+            unresolved_fields=[],
+            error="provider indisponível",
+        )
+    ]
+    apply_confidence(record)
+
+    route_for_review(record)
+
+    assert record.processing_status is ProcessingStatus.ACCEPTED
+    assert all(
+        reason.code != "EXTRACTION_CASCADE_EXHAUSTED"
+        for reason in record.review.reasons
+    )
+
+
 def test_exception_report_counts_routes() -> None:
     accepted = valid_document_record()
     apply_confidence(accepted)

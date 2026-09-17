@@ -256,11 +256,30 @@ def test_cascade_uses_python_when_all_models_are_unavailable() -> None:
     ]
 
 
-def test_cascade_does_not_hide_non_transient_model_error_with_python() -> None:
+def test_cascade_uses_python_when_all_models_fail_with_non_transient_error() -> None:
     python = StaticExtractor(sufficient_dividend())
     cascade = CascadingCorporateActionExtractor(
         python_extractor=python,
         basic_agent=InvalidRequestExtractor(),
+    )
+
+    result = cascade.extract(document())
+
+    assert python.calls == 1
+    assert [attempt.strategy for attempt in result.attempts] == [
+        ExtractionStrategy.BASIC_LLM,
+        ExtractionStrategy.BASIC_LLM,
+        ExtractionStrategy.PYTHON,
+    ]
+    assert result.attempts[0].outcome is ExtractionAttemptOutcome.ERROR
+    assert result.attempts[-1].outcome is ExtractionAttemptOutcome.SUFFICIENT
+
+
+def test_cascade_does_not_hide_valid_but_incomplete_model_response() -> None:
+    python = StaticExtractor(sufficient_dividend())
+    cascade = CascadingCorporateActionExtractor(
+        python_extractor=python,
+        basic_agent=StaticExtractor(AgentExtraction(), model="modelo-básico"),
     )
 
     result = cascade.extract(document())
@@ -270,7 +289,10 @@ def test_cascade_does_not_hide_non_transient_model_error_with_python() -> None:
         ExtractionStrategy.BASIC_LLM,
         ExtractionStrategy.BASIC_LLM,
     ]
-    assert result.attempts[0].outcome is ExtractionAttemptOutcome.ERROR
+    assert all(
+        attempt.outcome is ExtractionAttemptOutcome.INSUFFICIENT
+        for attempt in result.attempts
+    )
 
 
 class SequenceExtractor:
@@ -309,7 +331,7 @@ def test_disagreement_between_basic_passes_triggers_strong_verdict() -> None:
     )
 
 
-def test_failed_preliminary_validation_triggers_strong_model() -> None:
+def test_failed_non_required_preliminary_check_does_not_trigger_strong_model() -> None:
     strong = StaticExtractor(sufficient_dividend(), model="forte")
     cascade = CascadingCorporateActionExtractor(
         python_extractor=StaticExtractor(AgentExtraction()),
@@ -326,5 +348,8 @@ def test_failed_preliminary_validation_triggers_strong_model() -> None:
 
     result = cascade.extract(document())
 
-    assert strong.calls == 1
-    assert result.attempts[-1].strategy is ExtractionStrategy.STRONG_LLM
+    assert strong.calls == 0
+    assert all(
+        attempt.strategy is ExtractionStrategy.BASIC_LLM
+        for attempt in result.attempts
+    )

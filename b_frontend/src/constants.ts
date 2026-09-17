@@ -119,6 +119,7 @@ export const VALIDATION_RULE_LABELS: Record<string, string> = {
   FIN_GROSS_NET_TAX_CONSISTENT: 'Valores bruto, líquido e imposto são coerentes',
   FIN_GROSS_NET_TAX_MISMATCH: 'Valores bruto, líquido e imposto são incompatíveis',
   FIN_TAX_DEPENDS_ON_BENEFICIARY: 'Tributação depende do beneficiário',
+  FIN_TAX_CONDITIONAL_NET_DISCLOSED: 'Valor líquido divulgado com ressalva tributária',
   FIN_UNIVERSAL_NET_NOT_APPLICABLE: 'Valor líquido único não se aplica',
   FIN_CURRENCY_MISSING: 'Moeda não identificada',
   FIN_RATIO_VALID: 'Proporção válida',

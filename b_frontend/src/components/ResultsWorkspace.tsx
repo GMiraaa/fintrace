@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { getDocumentFileUrl } from '../api'
-import { REASON_LABELS, STATUS_LABELS } from '../constants'
+import { STATUS_LABELS } from '../constants'
+import { summarizeRoutingReasons } from '../routingReasons'
 import { DocumentThumbnail } from './DocumentThumbnail'
 import { Icon } from './Icon'
 import { RecordDetail } from './RecordDetail'
-import type { BatchUploadResponse, ExceptionReportDocument, ProcessingStatus, RoutingReason } from '../types'
+import type { BatchUploadResponse, ExceptionReportDocument, ProcessingStatus } from '../types'
 
 interface ResultsWorkspaceProps {
   onReevaluate: (documentId: string) => void
@@ -25,6 +26,12 @@ export function ResultsWorkspace({ onReevaluate, reevaluatingDocumentId, result 
   const exceptions = result.report.documents.filter(
     (document) => document.processing_status !== 'ACCEPTED',
   )
+  const reusedUploads = result.uploads?.filter(
+    (upload) => upload.disposition === 'REUSED',
+  ) ?? []
+  const otherUploadNotices = result.uploads?.filter(
+    (upload) => !['PROCESSED', 'REUSED'].includes(upload.disposition),
+  ) ?? []
 
   useEffect(() => {
     const firstException = result.report.documents.findIndex(
@@ -43,6 +50,29 @@ export function ResultsWorkspace({ onReevaluate, reevaluatingDocumentId, result 
 
   return (
     <section className="results" aria-labelledby="results-title">
+      {reusedUploads.length > 0 && (
+        <section
+          aria-label="Documento analisado anteriormente"
+          aria-live="polite"
+          className="reuse-notice reuse-notice--prominent"
+          role="status"
+        >
+          <span className="reuse-notice__icon"><Icon name="database" size={22} /></span>
+          <div>
+            <span className="reuse-notice__eyebrow">Resultado já existente</span>
+            <strong>{reusedUploads.length === 1 ? 'Este documento já havia sido analisado' : 'Estes documentos já haviam sido analisados'}</strong>
+            {reusedUploads.map((upload) => (
+              <p key={`${upload.sha256}:${upload.file_name}`}>
+                Você enviou <b>{upload.file_name}</b>.
+                {upload.existing_file_name && upload.existing_file_name !== upload.file_name
+                  ? <> O documento já está salvo como <b>{upload.existing_file_name}</b>.</>
+                  : null}
+                {' '}{upload.message}
+              </p>
+            ))}
+          </div>
+        </section>
+      )}
       <div className="results-heading">
         <div><p className="section-context">{hasAnalyzedDocuments ? 'Análise concluída' : 'Envio recebido'}</p><h2 id="results-title">{hasAnalyzedDocuments ? 'Confira o resultado' : 'Nenhum processamento duplicado foi iniciado'}</h2><p>{hasAnalyzedDocuments ? 'Comece pelos documentos que precisam de atenção. Depois, abra os dados de cada registro para conferir as evidências.' : 'O conteúdo informado já está em processamento. Tente novamente após a conclusão para reutilizar o resultado.'}</p></div>
       </div>
@@ -57,12 +87,12 @@ export function ResultsWorkspace({ onReevaluate, reevaluatingDocumentId, result 
         <button className="report-action" onClick={() => downloadJson('relatorio_de_excecoes.json', result.report)} type="button"><Icon name="download" size={16} />Baixar relatório do lote</button>
       </div>
 
-      {result.uploads?.some((upload) => upload.disposition !== 'PROCESSED') && (
-        <section className="reuse-notice" aria-label="Reutilização de documentos">
+      {otherUploadNotices.length > 0 && (
+        <section className="upload-notice" aria-label="Informações sobre o envio">
           <Icon name="database" size={18} />
           <div>
-            <strong>Deduplicação por conteúdo aplicada</strong>
-            {result.uploads.filter((upload) => upload.disposition !== 'PROCESSED').map((upload) => (
+            <strong>Informações sobre o envio</strong>
+            {otherUploadNotices.map((upload) => (
               <p key={`${upload.sha256}:${upload.file_name}`}>{upload.file_name}: {upload.message}</p>
             ))}
           </div>
@@ -74,7 +104,7 @@ export function ResultsWorkspace({ onReevaluate, reevaluatingDocumentId, result 
         <div>{exceptions.map((document) => (
           <button key={document.document_id} onClick={() => openDocument(result.report.documents.indexOf(document))} type="button">
             <StatusDot status={document.processing_status} />
-            <span><strong>{document.file_name}</strong><small>{document.exceptions.map(exceptionText).join(' ') || STATUS_LABELS[document.processing_status]}</small></span>
+            <span><strong>{document.file_name}</strong><small>{summarizeRoutingReasons(document.exceptions).join(' ') || STATUS_LABELS[document.processing_status]}</small></span>
             <span>Abrir documento</span>
           </button>
         ))}</div>
@@ -117,7 +147,7 @@ function FailureDetail({ document }: { document?: ExceptionReportDocument }) {
       {documentUrl && document && <DocumentThumbnail fileName={document.file_name} url={documentUrl} />}
       <Icon name="alert" size={28} />
       <h3>O documento não foi processado</h3>
-      <p>{document?.exceptions?.[0] ? exceptionText(document.exceptions[0]) : 'Consulte o histórico técnico para identificar a causa.'}</p>
+      <p>{document?.exceptions?.length ? summarizeRoutingReasons(document.exceptions)[0] : 'Consulte o histórico técnico para identificar a causa.'}</p>
       {documentUrl && <a className="secondary-action" href={documentUrl} rel="noreferrer" target="_blank"><Icon name="eye" size={17} />Ver documento original</a>}
     </div>
   )
@@ -139,8 +169,4 @@ function downloadJson(name: string, payload: unknown) {
   link.download = name
   link.click()
   URL.revokeObjectURL(url)
-}
-
-function exceptionText(exception: RoutingReason): string {
-  return REASON_LABELS[exception.code] || exception.message || 'O documento precisa de atenção.'
 }

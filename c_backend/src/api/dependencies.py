@@ -1,10 +1,9 @@
 from src.agent.cascade import CascadingCorporateActionExtractor
 from src.agent.deterministic import PythonCorporateActionExtractor
 from src.agent.gemini import GeminiCorporateActionAgent
-from src.agent.pdf_tools import build_pdfplumber_tools
 from src.agent.preliminary import build_preliminary_validator
-from src.agent.reference_tool import build_reference_lookup_tool
 from src.agent.skill_loader import load_project_agent_skills
+from src.agent.toolbox import CorporateActionToolbox
 from src.config import AppSettings
 from src.documents.preprocessor import DocumentPreprocessor
 from src.pipeline.processor import ProcessingPipeline
@@ -26,7 +25,7 @@ def build_pipeline(settings: AppSettings) -> ProcessingPipeline:
     reference_repository = GoldenRecordRepository.from_csv(
         settings.golden_records_path
     )
-    reference_lookup_tool = build_reference_lookup_tool(reference_repository)
+    toolbox = CorporateActionToolbox(reference_repository)
     artifact_repository = (
         PostgresArtifactRepository(settings.database_url)
         if settings.database_url
@@ -45,6 +44,9 @@ def build_pipeline(settings: AppSettings) -> ProcessingPipeline:
                     api_key=settings.gemini_api_key,
                     model=settings.llm_basic_model,
                     skill_text=skill_text,
+                    toolbox=toolbox,
+                    include_pdf_tools=False,
+                    max_remote_calls=3,
                 )
                 if settings.gemini_api_key
                 else None
@@ -54,8 +56,9 @@ def build_pipeline(settings: AppSettings) -> ProcessingPipeline:
                     api_key=settings.gemini_api_key,
                     model=settings.llm_strong_model,
                     skill_text=skill_text,
-                    reference_lookup_tool=reference_lookup_tool,
-                    pdf_tools_builder=build_pdfplumber_tools,
+                    toolbox=toolbox,
+                    include_pdf_tools=True,
+                    max_remote_calls=3,
                 )
                 if settings.gemini_api_key
                 else None
