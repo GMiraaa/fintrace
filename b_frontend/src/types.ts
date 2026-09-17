@@ -207,6 +207,14 @@ export interface ExceptionReport {
 export interface BatchUploadResponse {
   records: DocumentRecord[]
   report: ExceptionReport
+  uploads: UploadResult[]
+}
+
+export interface UploadResult {
+  file_name: string
+  sha256: string
+  disposition: 'PROCESSED' | 'REUSED' | 'DUPLICATE_IN_BATCH' | 'ALREADY_PROCESSING' | 'REEVALUATED'
+  message: string
 }
 
 export interface HealthResponse {

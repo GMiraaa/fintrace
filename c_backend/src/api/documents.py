@@ -16,12 +16,24 @@ def find_pdf_by_document_id(
     if match is None:
         return None
 
-    expected_digest = match.group(1)
+    return find_pdf_by_sha256(input_dir, match.group(1))
+
+
+def find_pdf_by_sha256(
+    input_dir: str | Path,
+    expected_digest: str,
+    *,
+    exclude: Path | None = None,
+) -> Path | None:
+    """Localiza outro PDF pelo hash, opcionalmente ignorando um upload."""
     directory = Path(input_dir).resolve()
     if not directory.is_dir():
         return None
 
+    excluded_path = exclude.resolve() if exclude is not None else None
     for candidate in sorted(directory.glob("*.pdf")):
+        if excluded_path is not None and candidate.resolve() == excluded_path:
+            continue
         if candidate.is_file() and _sha256(candidate) == expected_digest:
             return candidate
     return None

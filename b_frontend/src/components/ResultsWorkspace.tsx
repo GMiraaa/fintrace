@@ -8,13 +8,16 @@ import { RecordDetail } from './RecordDetail'
 import type { BatchUploadResponse, ExceptionReportDocument, ProcessingStatus, RoutingReason } from '../types'
 
 interface ResultsWorkspaceProps {
+  onReevaluate: (documentId: string) => void
+  reevaluatingDocumentId: string | null
   result: BatchUploadResponse
 }
 
-export function ResultsWorkspace({ result }: ResultsWorkspaceProps) {
+export function ResultsWorkspace({ onReevaluate, reevaluatingDocumentId, result }: ResultsWorkspaceProps) {
   const [activeIndex, setActiveIndex] = useState(0)
   const resultGridRef = useRef<HTMLDivElement>(null)
   const summary = result.report.summary
+  const hasAnalyzedDocuments = result.report.documents.length > 0
   const activeDocument = result.report.documents[activeIndex]
   const activeRecord = result.records.find(
     (record) => record.document_id === activeDocument?.document_id,
@@ -41,7 +44,7 @@ export function ResultsWorkspace({ result }: ResultsWorkspaceProps) {
   return (
     <section className="results" aria-labelledby="results-title">
       <div className="results-heading">
-        <div><p className="section-context">Análise concluída</p><h2 id="results-title">Confira o resultado</h2><p>Comece pelos documentos que precisam de atenção. Depois, abra os dados de cada registro para conferir as evidências.</p></div>
+        <div><p className="section-context">{hasAnalyzedDocuments ? 'Análise concluída' : 'Envio recebido'}</p><h2 id="results-title">{hasAnalyzedDocuments ? 'Confira o resultado' : 'Nenhum processamento duplicado foi iniciado'}</h2><p>{hasAnalyzedDocuments ? 'Comece pelos documentos que precisam de atenção. Depois, abra os dados de cada registro para conferir as evidências.' : 'O conteúdo informado já está em processamento. Tente novamente após a conclusão para reutilizar o resultado.'}</p></div>
       </div>
       <div className="batch-overview">
         <div className="batch-total"><strong>{summary.processed}</strong><span>{summary.processed === 1 ? 'documento analisado' : 'documentos analisados'}</span></div>
@@ -54,6 +57,18 @@ export function ResultsWorkspace({ result }: ResultsWorkspaceProps) {
         <button className="report-action" onClick={() => downloadJson('relatorio_de_excecoes.json', result.report)} type="button"><Icon name="download" size={16} />Baixar relatório do lote</button>
       </div>
 
+      {result.uploads?.some((upload) => upload.disposition !== 'PROCESSED') && (
+        <section className="reuse-notice" aria-label="Reutilização de documentos">
+          <Icon name="database" size={18} />
+          <div>
+            <strong>Deduplicação por conteúdo aplicada</strong>
+            {result.uploads.filter((upload) => upload.disposition !== 'PROCESSED').map((upload) => (
+              <p key={`${upload.sha256}:${upload.file_name}`}>{upload.file_name}: {upload.message}</p>
+            ))}
+          </div>
+        </section>
+      )}
+
       {exceptions.length > 0 && <section className="attention-queue" aria-labelledby="attention-title">
         <header><div><Icon name="alert" size={19} /><span><strong id="attention-title">Comece por estes documentos</strong><small>{exceptions.length === 1 ? '1 documento precisa de uma ação' : `${exceptions.length} documentos precisam de uma ação`}</small></span></div></header>
         <div>{exceptions.map((document) => (
@@ -65,7 +80,7 @@ export function ResultsWorkspace({ result }: ResultsWorkspaceProps) {
         ))}</div>
       </section>}
 
-      <div className="result-grid" ref={resultGridRef}>
+      {hasAnalyzedDocuments && <div className="result-grid" ref={resultGridRef}>
         <nav className="document-nav" aria-label="Documentos processados">
           <div className="document-nav__heading"><strong>Escolha um documento</strong><span>O resultado aparece ao lado</span></div>
           {result.report.documents.map((document, index) => (
@@ -82,9 +97,15 @@ export function ResultsWorkspace({ result }: ResultsWorkspaceProps) {
           ))}
         </nav>
         <div className="record-detail">
-          {activeRecord ? <RecordDetail record={activeRecord} /> : <FailureDetail document={activeDocument} />}
+          {activeRecord ? (
+            <RecordDetail
+              onReevaluate={onReevaluate}
+              record={activeRecord}
+              reevaluating={reevaluatingDocumentId === activeRecord.document_id}
+            />
+          ) : <FailureDetail document={activeDocument} />}
         </div>
-      </div>
+      </div>}
     </section>
   )
 }

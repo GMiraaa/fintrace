@@ -1,3 +1,13 @@
-from .postgres import ArtifactRepository, PostgresArtifactRepository
+from .postgres import (
+    ArtifactRepository,
+    DocumentClaim,
+    DocumentRegistry,
+    PostgresArtifactRepository,
+)
 
-__all__ = ["ArtifactRepository", "PostgresArtifactRepository"]
+__all__ = [
+    "ArtifactRepository",
+    "DocumentClaim",
+    "DocumentRegistry",
+    "PostgresArtifactRepository",
+]

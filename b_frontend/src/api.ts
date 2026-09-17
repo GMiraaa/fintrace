@@ -28,3 +28,15 @@ export async function uploadDocuments(files: File[]): Promise<BatchUploadRespons
   }
   return payload
 }
+
+export async function reevaluateDocument(documentId: string): Promise<BatchUploadResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/documents/${encodeURIComponent(documentId)}/reevaluate`,
+    { method: 'POST' },
+  )
+  const payload = await response.json().catch(() => null)
+  if (!response.ok) {
+    throw new Error(payload?.detail || 'Não foi possível reavaliar o documento.')
+  }
+  return payload
+}

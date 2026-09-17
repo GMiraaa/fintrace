@@ -4,6 +4,10 @@ Este é o contrato normativo para os modelos Pydantic, persistência em JSON e
 respostas da API. A saída principal da LLM é um subconjunto deste contrato;
 validação, confiança e roteamento são preenchidos pelo backend.
 
+O artefato normativo do case continua sendo o JSON no filesystem. PostgreSQL
+mantém cache e histórico, e a resposta HTTP acrescenta metadados de upload, mas
+nenhuma dessas projeções altera o schema `2.0` do registro por documento.
+
 ## Convenções
 
 - `schema_version`: `2.0`.
@@ -384,6 +388,57 @@ tabela `processing_artifacts`. As colunas `artifact_type`, `file_name`,
 `document_id`, `processing_status` e `created_at` permitem consultas sem
 desmontar o payload. Cada nova execução cria uma linha e preserva o histórico.
 
+Separadamente, `documents` é o índice operacional por conteúdo. `sha256` é sua
+chave primária, `document_id` também é único e os campos
+`processing_state`, `latest_processing_status`, `latest_payload`, `revision`,
+`processing_started_at`, `processed_at` e `updated_at` controlam deduplicação e
+reavaliação. `latest_payload` facilita reutilização, mas não substitui as linhas
+imutáveis de `processing_artifacts`.
+
+## Contrato HTTP de upload e reavaliação
+
+`POST /api/documents/upload` e
+`POST /api/documents/{document_id}/reevaluate` retornam:
+
+```json
+{
+  "records": [],
+  "report": {
+    "schema_version": "2.0",
+    "summary": {
+      "processed": 0,
+      "accepted": 0,
+      "human_review": 0,
+      "pending_information": 0,
+      "failed": 0
+    },
+    "documents": []
+  },
+  "uploads": [
+    {
+      "file_name": "aviso.pdf",
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "disposition": "REUSED",
+      "message": "Documento já processado; resultado anterior reutilizado sem nova chamada à IA."
+    }
+  ]
+}
+```
+
+As disposições possíveis são:
+
+- `PROCESSED`: a requisição reservou um hash novo e executou a pipeline;
+- `REUSED`: o último `DocumentRecord` concluído foi devolvido sem nova LLM;
+- `DUPLICATE_IN_BATCH`: outro arquivo do mesmo lote possui bytes idênticos;
+- `ALREADY_PROCESSING`: outra requisição já reservou o SHA-256;
+- `REEVALUATED`: o operador solicitou nova execução para um documento concluído.
+
+O nome não participa da identidade. A reserva usa a unicidade do SHA-256 no
+PostgreSQL, portanto dois uploads simultâneos do mesmo conteúdo não iniciam duas
+chamadas à IA. Uma reavaliação preserva o hash, incrementa `revision` e cria
+novo artefato histórico; se o documento estiver em `PROCESSING`, a API retorna
+`409`.
+
 ## Códigos de validação
 
 ### Documento e referência
@@ -491,6 +546,7 @@ O relatório usa o mesmo `schema_version` e contém:
       "document_id": "sha256:...",
       "file_name": "notice.pdf",
       "processing_status": "ACCEPTED",
+      "confidence_score": 92,
       "exceptions": []
     }
   ]

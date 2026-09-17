@@ -1,6 +1,16 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Protocol
+
+from src.models.schemas import DocumentRecord
+
+
+@dataclass(frozen=True)
+class DocumentClaim:
+    acquired: bool
+    state: str
+    record: DocumentRecord | None = None
 
 
 class ArtifactRepository(Protocol):
@@ -13,6 +23,16 @@ class ArtifactRepository(Protocol):
         document_id: str | None = None,
         processing_status: str | None = None,
     ) -> None: ...
+
+
+class DocumentRegistry(Protocol):
+    def claim_document(
+        self,
+        *,
+        sha256: str,
+        file_name: str,
+        force: bool = False,
+    ) -> DocumentClaim: ...
 
 
 class PostgresArtifactRepository:
@@ -35,6 +55,24 @@ class PostgresArtifactRepository:
 
     def _ensure_schema(self) -> None:
         with self._connect() as connection:
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS documents (
+                    sha256 CHAR(64) PRIMARY KEY,
+                    document_id TEXT NOT NULL UNIQUE,
+                    original_file_name TEXT NOT NULL,
+                    processing_state VARCHAR(16) NOT NULL,
+                    latest_processing_status VARCHAR(32),
+                    latest_payload JSONB,
+                    revision INTEGER NOT NULL DEFAULT 1,
+                    processing_started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    processed_at TIMESTAMPTZ,
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    CONSTRAINT ck_documents_sha256
+                        CHECK (sha256 ~ '^[0-9a-f]{64}$')
+                )
+                """
+            )
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS processing_artifacts (
@@ -60,6 +98,112 @@ class PostgresArtifactRepository:
                 ON processing_artifacts (created_at DESC)
                 """
             )
+            connection.execute(
+                """
+                INSERT INTO documents (
+                    sha256,
+                    document_id,
+                    original_file_name,
+                    processing_state,
+                    latest_processing_status,
+                    latest_payload,
+                    processed_at,
+                    updated_at
+                )
+                SELECT DISTINCT ON (substring(document_id FROM 8))
+                    substring(document_id FROM 8),
+                    document_id,
+                    COALESCE(
+                        payload #>> '{source_document,file_name}',
+                        file_name
+                    ),
+                    'COMPLETED',
+                    processing_status,
+                    payload,
+                    created_at,
+                    created_at
+                FROM processing_artifacts
+                WHERE artifact_type = 'DOCUMENT_RECORD'
+                  AND processing_status <> 'FAILED'
+                  AND document_id ~ '^sha256:[0-9a-f]{64}$'
+                  AND payload ->> 'schema_version' = '2.0'
+                ORDER BY substring(document_id FROM 8), created_at DESC
+                ON CONFLICT (sha256) DO NOTHING
+                """
+            )
+
+    def claim_document(
+        self,
+        *,
+        sha256: str,
+        file_name: str,
+        force: bool = False,
+    ) -> DocumentClaim:
+        document_id = f"sha256:{sha256}"
+        with self._connect() as connection:
+            inserted = connection.execute(
+                """
+                INSERT INTO documents (
+                    sha256, document_id, original_file_name, processing_state
+                ) VALUES (%s, %s, %s, 'PROCESSING')
+                ON CONFLICT (sha256) DO NOTHING
+                RETURNING sha256
+                """,
+                (sha256, document_id, file_name),
+            ).fetchone()
+            if inserted is not None:
+                return DocumentClaim(acquired=True, state="PROCESSING")
+
+            if force:
+                claimed = connection.execute(
+                    """
+                    UPDATE documents
+                    SET processing_state = 'PROCESSING',
+                        original_file_name = %s,
+                        revision = revision + 1,
+                        processing_started_at = NOW(),
+                        processed_at = NULL,
+                        updated_at = NOW()
+                    WHERE sha256 = %s AND processing_state <> 'PROCESSING'
+                    RETURNING sha256
+                    """,
+                    (file_name, sha256),
+                ).fetchone()
+                if claimed is not None:
+                    return DocumentClaim(acquired=True, state="PROCESSING")
+
+            row = connection.execute(
+                """
+                SELECT processing_state, latest_payload
+                FROM documents
+                WHERE sha256 = %s
+                """,
+                (sha256,),
+            ).fetchone()
+            if row is None:
+                raise RuntimeError("document claim disappeared unexpectedly")
+            state, payload = row
+            record = None
+            if state == "COMPLETED" and payload is not None:
+                record = DocumentRecord.model_validate(payload)
+            if state == "FAILED" and not force:
+                retried = connection.execute(
+                    """
+                    UPDATE documents
+                    SET processing_state = 'PROCESSING',
+                        original_file_name = %s,
+                        revision = revision + 1,
+                        processing_started_at = NOW(),
+                        processed_at = NULL,
+                        updated_at = NOW()
+                    WHERE sha256 = %s AND processing_state = 'FAILED'
+                    RETURNING sha256
+                    """,
+                    (file_name, sha256),
+                ).fetchone()
+                if retried is not None:
+                    return DocumentClaim(acquired=True, state="PROCESSING")
+            return DocumentClaim(acquired=False, state=state, record=record)
 
     def save_artifact(
         self,
@@ -72,6 +216,12 @@ class PostgresArtifactRepository:
     ) -> None:
         from psycopg.types.json import Jsonb
 
+        source_document = payload.get("source_document")
+        original_file_name = (
+            source_document.get("file_name", file_name)
+            if isinstance(source_document, dict)
+            else file_name
+        )
         with self._connect() as connection:
             connection.execute(
                 """
@@ -91,3 +241,49 @@ class PostgresArtifactRepository:
                     Jsonb(payload),
                 ),
             )
+            if artifact_type == "DOCUMENT_RECORD" and document_id:
+                sha256 = _sha256_from_document_id(document_id)
+                if sha256 is not None:
+                    state = (
+                        "FAILED"
+                        if processing_status == "FAILED"
+                        else "COMPLETED"
+                    )
+                    connection.execute(
+                        """
+                        INSERT INTO documents (
+                            sha256,
+                            document_id,
+                            original_file_name,
+                            processing_state,
+                            latest_processing_status,
+                            latest_payload,
+                            processed_at,
+                            updated_at
+                        ) VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
+                        ON CONFLICT (sha256) DO UPDATE
+                        SET processing_state = EXCLUDED.processing_state,
+                            latest_processing_status = EXCLUDED.latest_processing_status,
+                            latest_payload = EXCLUDED.latest_payload,
+                            processed_at = NOW(),
+                            updated_at = NOW()
+                        """,
+                        (
+                            sha256,
+                            document_id,
+                            original_file_name,
+                            state,
+                            processing_status,
+                            Jsonb(payload),
+                        ),
+                    )
+
+
+def _sha256_from_document_id(document_id: str) -> str | None:
+    prefix = "sha256:"
+    digest = document_id.removeprefix(prefix)
+    if not document_id.startswith(prefix) or len(digest) != 64:
+        return None
+    if any(character not in "0123456789abcdef" for character in digest):
+        return None
+    return digest

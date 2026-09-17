@@ -12,6 +12,7 @@ flowchart TB
     end
     subgraph Backend FastAPI
         HTTP[API e segurança de upload]
+        REG[Registro e reserva por SHA-256]
         VIEW[Resolução segura do PDF por hash]
         ORCH[Pipeline]
         PRE[Normalização e OCR]
@@ -34,7 +35,9 @@ flowchart TB
         PG[(PostgreSQL JSONB)]
     end
 
-    FE --> HTTP --> ORCH
+    FE --> HTTP --> REG
+    REG -->|hash novo| ORCH
+    REG -->|concluído| PG
     FE -->|visualização sob demanda| VIEW
     VIEW --> INPUT
     INPUT --> PRE --> ORCH
@@ -93,10 +96,23 @@ flowchart TB
   `gemini-3.8-flash` no nível forte. A escolha aproveita a camada gratuita e a
   saída estruturada, mas não altera o núcleo determinístico.
 - O sistema persiste os JSONs no filesystem e, de forma append-only, na tabela
-  `processing_artifacts` do PostgreSQL. Não há fila, banco vetorial ou
-  arquitetura multiagente autônoma.
+  `processing_artifacts` do PostgreSQL. A tabela `documents`, cuja chave primária
+  é o SHA-256 do conteúdo, mantém o estado e o último resultado para
+  deduplicação. Não há fila, banco vetorial ou arquitetura multiagente autônoma.
+- A reserva usa `INSERT ... ON CONFLICT DO NOTHING`. Assim, mesmo entre
+  requisições ou instâncias concorrentes, somente uma execução pode colocar um
+  SHA-256 novo em `PROCESSING`; as demais reutilizam o resultado concluído ou
+  informam que ele ainda está em processamento.
+- `POST /api/documents/{document_id}/reevaluate` é a exceção explícita ao cache.
+  Ele incrementa a revisão sem alterar a identidade de conteúdo e recusa uma
+  segunda reavaliação enquanto a primeira estiver ativa.
 - O endpoint de processamento é síncrono. Uma fila só será
   introduzida mediante requisito de volume, latência ou recuperação de jobs.
+- A reserva por hash pertence à fronteira HTTP. A CLI continua sendo uma
+  ferramenta deliberada para reproduzir um lote conhecido e chama a pipeline
+  diretamente; ao persistir, ela atualiza `documents`, mas não usa o cache para
+  pular entradas. Essa separação evita que uma reprodução do entregável seja
+  silenciosamente omitida por um resultado histórico.
 - O endpoint `GET /api/documents/{document_id}/file` resolve o PDF pelo SHA-256
   presente no `document_id`. Nomes e caminhos enviados pelo cliente não são
   usados para localizar arquivos. A busca é restrita a PDFs do diretório de
@@ -137,6 +153,9 @@ flowchart TB
 ## Contratos normativos
 
 - O formato de saída está definido em [output-contract.md](output-contract.md).
+- O enunciado é rastreado pela matriz de atendimento no README; essa matriz
+  aponta para os componentes responsáveis e diferencia implementação de
+  artefato efetivamente entregue.
 - Os códigos são identificadores públicos e estáveis. Mensagens podem evoluir;
   códigos só devem ser removidos em uma nova versão do schema.
 - `NOT_DISCLOSED` descreve conhecimento confiável de que o emissor ainda não
@@ -162,6 +181,9 @@ flowchart TB
   durante o desenvolvimento.
 - **Persistência dupla:** o filesystem permite entregar e inspecionar os
   artefatos do case; o PostgreSQL preserva cada geração em JSONB para histórico.
+- **Índice operacional separado do histórico:** `documents` responde rapidamente
+  se um hash está ativo ou concluído, enquanto `processing_artifacts` continua
+  append-only. Isso evita sobrescrever auditoria para implementar cache.
 - **Documento localizado por identidade de conteúdo:** o mesmo SHA-256 usado no
   contrato identifica o PDF no visualizador e evita confiar em caminhos vindos
   do navegador. A busca linear é adequada ao lote pequeno; em produção, seria
@@ -182,7 +204,12 @@ flowchart TB
   mantêm tipo, documento, status e data consultáveis.
 - **Não usar fila assíncrona:** o endpoint permanece síncrono e simples. Isso não
   escala bem para alto volume, mas evita infraestrutura operacional que o case
-  não exige.
+  não exige. A ausência de fila não elimina a proteção concorrente: a chave
+  única do SHA-256 impede processamento duplicado do mesmo conteúdo.
+- **Não usar hash perceptual:** SHA-256 identifica bytes idênticos com semântica
+  simples e restrição nativa no banco. PDFs visualmente iguais, mas
+  reserializados, são processados separadamente para não correr o risco de
+  colapsar documentos financeiros que diferem em metadados ou conteúdo sutil.
 - **Não usar LangChain:** o SDK do provider e funções Python explícitas tornam o
   fluxo de controle menor, tipado e fácil de depurar durante a sessão técnica.
 - **Não dar acesso irrestrito ao PDF:** as tools ficam vinculadas ao documento

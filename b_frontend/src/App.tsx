@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { getHealth, uploadDocuments } from './api'
+import { getHealth, reevaluateDocument, uploadDocuments } from './api'
 import { ResultsWorkspace } from './components/ResultsWorkspace'
 import { Topbar } from './components/Topbar'
 import { TracePreview } from './components/TracePreview'
@@ -32,6 +32,7 @@ function App() {
   const [state, setState] = useState<AppState>('idle')
   const [error, setError] = useState('')
   const [result, setResult] = useState<BatchUploadResponse | null>(null)
+  const [reevaluatingDocumentId, setReevaluatingDocumentId] = useState<string | null>(null)
   const [fontScale, setFontScale] = useState(initialFontScale)
 
   useEffect(() => {
@@ -90,6 +91,18 @@ function App() {
     }
   }
 
+  async function reevaluate(documentId: string) {
+    setReevaluatingDocumentId(documentId)
+    setError('')
+    try {
+      setResult(await reevaluateDocument(documentId))
+    } catch (requestError: unknown) {
+      setError(requestError instanceof Error ? requestError.message : 'Não foi possível reavaliar o documento.')
+    } finally {
+      setReevaluatingDocumentId(null)
+    }
+  }
+
   return (
     <div className="app-shell">
       <Topbar
@@ -106,7 +119,7 @@ function App() {
           <UploadPanel error={error} files={files} onAddFiles={addFiles} onProcess={processFiles} onRemoveFile={removeFile} state={state} />
           <TracePreview state={state} hasResult={Boolean(result)} />
         </section>
-        {result ? <ResultsWorkspace result={result} /> : (
+        {result ? <ResultsWorkspace onReevaluate={reevaluate} reevaluatingDocumentId={reevaluatingDocumentId} result={result} /> : (
           <section className="empty-guidance" aria-label="Como o FinTrace trabalha">
             <span>Leitura do documento</span>
             <span>Conferência automática</span>

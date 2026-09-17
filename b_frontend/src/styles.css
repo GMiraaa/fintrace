@@ -117,6 +117,9 @@ h1 { font-size: clamp(2.25rem, 4.5vw, 3.875rem); font-weight: 610; letter-spacin
 .results-heading .section-context { margin-bottom: 7px; }
 .results-heading > div > p:last-child { color: var(--muted); font-size: 0.875rem; line-height: 1.5; margin: 9px 0 0; max-width: 720px; }
 .batch-overview { align-items: center; background: var(--blue-dark); color: #fff; display: grid; gap: 26px; grid-template-columns: auto minmax(0, 1fr) auto; padding: 22px 24px; }
+.reuse-notice { align-items: flex-start; background: #edf5fe; border: 1px solid #bed7ef; border-top: 0; display: flex; gap: 12px; padding: 14px 18px; }
+.reuse-notice strong { display: block; font-size: 0.75rem; }
+.reuse-notice p { color: var(--muted); font-size: 0.6875rem; margin: 4px 0 0; }
 .batch-total { border-right: 1px solid #34577f; display: flex; flex-direction: column; min-width: 145px; padding-right: 24px; }
 .batch-total strong { font-size: 2.125rem; font-weight: 610; line-height: 1; }
 .batch-total span { color: #afc7e1; font-size: 0.6875rem; margin-top: 5px; }

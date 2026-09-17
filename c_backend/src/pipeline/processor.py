@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import time
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -141,8 +142,13 @@ class ProcessingPipeline:
         )
         return record
 
-    def process_batch(self, paths: list[str | Path]) -> BatchProcessingResult:
-        records: list[DocumentRecord] = []
+    def process_batch(
+        self,
+        paths: list[str | Path],
+        *,
+        existing_records: Iterable[DocumentRecord] = (),
+    ) -> BatchProcessingResult:
+        records: list[DocumentRecord] = list(existing_records)
         failures: list[ExceptionReportDocument] = []
         for path in paths:
             try:

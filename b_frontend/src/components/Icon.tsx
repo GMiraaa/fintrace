@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-export type IconName = 'upload' | 'file' | 'check' | 'alert' | 'close' | 'eye' | 'download' | 'shield' | 'database'
+export type IconName = 'upload' | 'file' | 'check' | 'alert' | 'close' | 'eye' | 'download' | 'refresh' | 'shield' | 'database'
 
 interface IconProps {
   name: IconName
@@ -16,6 +16,7 @@ export function Icon({ name, size = 20 }: IconProps) {
     close: <path d="m6 6 12 12M18 6 6 18" />,
     eye: <><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" /></>,
     download: <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14" />,
+    refresh: <path d="M20 6v5h-5M4 18v-5h5M6.1 9A7 7 0 0 1 18 6l2 5M17.9 15A7 7 0 0 1 6 18l-2-5" />,
     shield: <path d="M12 3 5 6v5c0 4.6 2.8 8 7 10 4.2-2 7-5.4 7-10V6l-7-3Zm-3 9 2 2 4-4" />,
     database: <><ellipse cx="12" cy="5" rx="7" ry="3" /><path d="M5 5v6c0 1.7 3.1 3 7 3s7-1.3 7-3V5M5 11v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" /></>,
   }

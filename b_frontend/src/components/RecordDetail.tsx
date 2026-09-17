@@ -47,10 +47,12 @@ type DetailTab = (typeof DETAIL_TABS)[number][0]
 type DisplayField = AuditableField<string | RatioValue>
 
 interface RecordDetailProps {
+  onReevaluate: (documentId: string) => void
   record: DocumentRecord
+  reevaluating: boolean
 }
 
-export function RecordDetail({ record }: RecordDetailProps) {
+export function RecordDetail({ onReevaluate, record, reevaluating }: RecordDetailProps) {
   const [activeTab, setActiveTab] = useState<DetailTab>('resumo')
   const [showDocument, setShowDocument] = useState(false)
   const action = record.corporate_action
@@ -79,6 +81,10 @@ export function RecordDetail({ record }: RecordDetailProps) {
             <button className="secondary-action" onClick={() => downloadRecord(record)} type="button">
               <Icon name="download" size={17} />
               Baixar dados em JSON
+            </button>
+            <button className="secondary-action" disabled={reevaluating} onClick={() => onReevaluate(record.document_id)} type="button">
+              <Icon name="refresh" size={17} />
+              {reevaluating ? 'Reavaliando…' : 'Reavaliar documento'}
             </button>
           </div>
         </div>

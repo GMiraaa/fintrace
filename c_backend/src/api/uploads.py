@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 import re
 import secrets
 import unicodedata
+from dataclasses import dataclass
 from pathlib import Path
 
 from fastapi import HTTPException, UploadFile, status
@@ -10,12 +12,19 @@ from fastapi import HTTPException, UploadFile, status
 ALLOWED_CONTENT_TYPES = {"application/pdf", "application/x-pdf"}
 
 
+@dataclass(frozen=True)
+class StoredUpload:
+    path: Path
+    sha256: str
+    original_file_name: str
+
+
 async def store_pdf_upload(
     upload: UploadFile,
     *,
     input_dir: Path,
     max_size_bytes: int,
-) -> Path:
+) -> StoredUpload:
     original_name = upload.filename or ""
     if not original_name:
         raise _bad_request("A filename is required.")
@@ -49,7 +58,11 @@ async def store_pdf_upload(
     except Exception:
         temporary.unlink(missing_ok=True)
         raise
-    return destination
+    return StoredUpload(
+        path=destination,
+        sha256=hashlib.sha256(content).hexdigest(),
+        original_file_name=original_name,
+    )
 
 
 def _sanitize_filename(filename: str) -> str:

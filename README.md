@@ -33,12 +33,32 @@ separa:
 O sistema prefere `UNKNOWN` a um valor inventado e diferencia uma extração
 incerta de uma informação explicitamente marcada como ainda não divulgada.
 
+## Atendimento ao enunciado
+
+| Requisito mínimo | Como é atendido | Evidência principal |
+|---|---|---|
+| 1. Campos obrigatórios | Emissor, CNPJ, ISIN, ticker, tipo, datas, valores, proporção e moeda possuem campos tipados e auditáveis. A data de aprovação participa dos campos materiais. | `models/schemas.py`, `agent/schemas.py` e contrato de saída |
+| 2. Classificação do evento | A LLM interpreta a substância econômica; regras posteriores verificam sinais, campos exigidos e conflito entre título e corpo. | `agent`, `tools/event_rules.py` e `classification_evidence` |
+| 3. Golden records e coerência | O modelo forte dispõe de `lookup_golden_record` por function calling. O backend sempre repete a validação canônica e aplica regras de datas, valores e evento. | `agent/reference_tool.py`, `agent/preliminary.py` e `tools` |
+| 4. Confiança e rastreabilidade | Cada campo registra percentual, concordância entre passagens, origem, página, trecho, método de leitura e validações; o documento recebe score e completude. | `confidence` e schema `2.0` |
+| 5. Roteamento de incerteza | Campos materiais abaixo de 75%, conflitos, falhas de regra e baixa legibilidade geram motivos estruturados e revisão humana. Informação futura segue para acompanhamento. | `routing/router.py` e `exception_report.json` |
+| 6. Saída auditável | Cada documento gera um JSON, inclusive em falha técnica, e o lote gera um relatório curto. A interface projeta valor, evidência, confiança, referência e ação necessária. | `a_data/b_output`, contrato de saída e frontend |
+
+Os entregáveis do case são complementares: o código executável, este README com
+decisões e trade-offs, e os artefatos efetivamente gerados para o lote. O
+PostgreSQL preserva histórico operacional, mas **não substitui** os JSONs e o
+relatório versionados em `a_data/b_output` na entrega.
+
 ## Fluxo de processamento
 
 ```mermaid
 flowchart TD
     A[Upload de um ou mais PDFs] --> B[Validação de extensão, MIME, tamanho e assinatura]
-    B --> C{Texto nativo suficiente?}
+    B --> HASH[SHA-256 calculado a partir do conteúdo]
+    HASH --> CLAIM{Reserva atômica no PostgreSQL}
+    CLAIM -- Resultado concluído --> CACHE[Reutiliza o último registro<br/>sem chamar a IA]
+    CLAIM -- Outro upload processando --> WAIT[Informa processamento em andamento]
+    CLAIM -- Hash novo --> C{Texto nativo suficiente?}
     C -- Sim --> D[Normalização por página]
     C -- Não --> E[Renderização a 300 DPI]
     E --> F[Cinza, contraste, redução de ruído, nitidez e Otsu]
@@ -69,7 +89,8 @@ flowchart TD
     R --> V[JSON por documento e relatório consolidado]
     S --> V
     U --> V
-    V --> DB[(PostgreSQL JSONB)]
+    V --> DB[(Histórico PostgreSQL JSONB)]
+    CACHE --> V
 ```
 
 A LLM participa somente da interpretação. Validações financeiras, temporais,
@@ -111,6 +132,8 @@ documentos confidenciais em produção.
 ```mermaid
 flowchart LR
     UI[React / TypeScript / Vite] -->|HTTP multipart e JSON| API[FastAPI]
+    API --> REG[Registro por SHA-256<br/>reserva atômica e cache]
+    REG --> PG[(PostgreSQL)]
     API --> PIPE[Pipeline de processamento]
     PIPE --> DOC[Pré-processamento<br/>PyMuPDF, Pillow e Tesseract]
     PIPE --> CASCADE[Cascata de extração<br/>Gemini básico, forte e contingência Python]
@@ -121,7 +144,7 @@ flowchart LR
     REFTOOL --> CSV[(golden_records.csv)]
     RULES --> CSV
     PIPE --> JSON[(JSONs e relatório)]
-    PIPE --> PG[(PostgreSQL / JSONB)]
+    PIPE --> PG
 ```
 
 Essa estrutura foi escolhida para manter limites claros:
@@ -383,6 +406,18 @@ curl -X POST http://localhost:8000/api/documents/upload \
   -F 'files=@a_data/a_input/02_banco_meridional_jcp.pdf'
 ```
 
+Antes de acionar qualquer modelo, o backend calcula o SHA-256 dos bytes do PDF
+e tenta reservar esse hash na tabela `documents`. A chave primária em `sha256`
+torna a reserva atômica: uploads simultâneos do mesmo conteúdo podem ter nomes
+diferentes, mas somente uma requisição conquista o direito de processá-lo. As
+demais recebem `ALREADY_PROCESSING`; se já houver resultado concluído, recebem
+`REUSED` junto do último registro, sem novas chamadas à IA.
+
+A resposta inclui `uploads`, com o hash, a disposição e uma mensagem para cada
+arquivo: `PROCESSED`, `REUSED`, `DUPLICATE_IN_BATCH` ou
+`ALREADY_PROCESSING`. Assim, a interface explica quando houve economia de
+processamento, sem confundir reutilização com uma nova análise.
+
 O documento original de um registro processado pode ser consultado pelo seu
 identificador de conteúdo:
 
@@ -398,6 +433,17 @@ servida como `application/pdf`, com disposição `inline` e sem cache no navegad
 Identificadores inválidos, arquivos removidos ou hashes desconhecidos retornam
 `404`.
 
+Uma nova análise deliberada pode ser solicitada pelo botão `Reavaliar
+documento` ou pelo endpoint:
+
+```text
+POST /api/documents/{document_id}/reevaluate
+```
+
+A reavaliação mantém o mesmo SHA-256, incrementa a revisão operacional e gera
+um novo artefato no histórico. Se outra execução do documento estiver ativa, a
+API retorna `409` em vez de iniciar uma segunda chamada concorrente.
+
 ### Uso do painel de resultados
 
 Depois do processamento, a interface organiza o lote em uma sequência de
@@ -411,7 +457,8 @@ conferência:
 6. A aba `Dados extraídos` explica cada campo e permite abrir sua evidência;
 7. A aba `Histórico da análise` reúne tentativas automáticas e regras aplicadas;
 8. Uma miniatura mantém o PDF visível e permite abrir o visualizador completo;
-9. O relatório consolidado pode ser baixado pela ação `Baixar relatório do lote`.
+9. `Reavaliar documento` executa novamente a cascata quando o operador desejar;
+10. O relatório consolidado pode ser baixado pela ação `Baixar relatório do lote`.
 
 A miniatura da primeira página é carregada para o documento selecionado. O
 visualizador completo só é carregado quando solicitado. A trilha estruturada
@@ -439,8 +486,10 @@ Documentos específicos podem ser informados como argumentos posicionais.
 ## Entradas e saídas
 
 Os uploads são sanitizados e validados por extensão, MIME type, tamanho e
-assinatura do PDF antes de serem persistidos em `a_data/a_input`. Em caso de
-colisão, o novo arquivo recebe um sufixo único; exemplos existentes nunca são
+assinatura do PDF antes de serem persistidos em `a_data/a_input`. O conteúdo é
+identificado por SHA-256, independentemente do nome. Arquivos distintos com o
+mesmo nome recebem sufixo único; cópias de conteúdo já registrado são removidas
+depois que o banco confirma a reutilização, e exemplos existentes nunca são
 sobrescritos.
 
 `a_data/a_input` é um diretório operacional e está ignorado pelo Git para evitar
@@ -467,6 +516,12 @@ O mesmo payload de cada JSON é inserido como uma nova linha na tabela
 processamentos do mesmo documento preservam o histórico, enquanto os arquivos
 continuam sendo gerados para compor o entregável do case.
 
+A tabela `documents` é o índice operacional. `sha256` é sua chave primária e,
+portanto, única; ela guarda o estado `PROCESSING`, `COMPLETED` ou `FAILED`, o
+último payload e o número da revisão. A tabela não substitui o histórico
+append-only. Na inicialização, artefatos válidos produzidos antes da criação do
+índice são incorporados ao registro, evitando reprocessamento desnecessário.
+
 O JSON gerado utiliza o schema `2.0`. Valores decimais são representados como
 strings e datas seguem ISO 8601. Consulte o
 [contrato de saída](f_docs/b_architecture/output-contract.md) completo.
@@ -478,6 +533,17 @@ oito PDFs canônicos. Antes da entrega, `a_data/b_output` deve conter exatamente
 os oito JSONs individuais e `exception_report.json`, sem artefatos de execuções
 anteriores. O relatório é substituído a cada lote; o histórico completo permanece
 no PostgreSQL.
+
+Esta etapa faz parte da entrega e deve ser executada com os PDFs fornecidos
+presentes em `a_data/a_input`. Para uma conferência rápida antes do envio:
+
+```bash
+find a_data/b_output -maxdepth 1 -type f -name '*.json' -printf '%f\n' | sort
+```
+
+O resultado esperado é um JSON por PDF do lote mais
+`exception_report.json`. Não considere a entrega completa se esses arquivos
+estiverem ausentes, mesmo que existam registros equivalentes no banco.
 
 ## Confiança e status dos campos
 
@@ -544,7 +610,7 @@ Cada campo material contém:
 
 - Valor e status explícito;
 - Origem no documento, referência, derivação ou origem desconhecida;
-- Nível de confiança;
+- Confiança percentual de 0 a 100;
 - Página e trecho da evidência;
 - Método de extração (`NATIVE_TEXT` ou `OCR`);
 - Resultados das validações determinísticas.
@@ -610,7 +676,13 @@ um mock, e as regras determinísticas são testadas isoladamente.
   consulta. O custo é exigir um terceiro serviço no ambiente local.
 - **Sem fila de tarefas:** o processamento é síncrono no MVP. Uma fila passa a
   ser justificável com usuários concorrentes, jobs longos, retries ou necessidade
-  de retomada.
+  de retomada. Ainda assim, a reserva única por SHA-256 impede duas execuções
+  simultâneas do mesmo conteúdo entre instâncias da API.
+- **Deduplicação por hash do conteúdo:** nomes diferentes não burlam o cache e a
+  restrição única no PostgreSQL resolve a corrida entre uploads. O custo é que
+  qualquer alteração de um byte produz uma nova identidade, mesmo quando o PDF
+  parece visualmente igual; não foi adotada deduplicação perceptual por ela poder
+  fundir documentos financeiros distintos.
 - **Sem LangChain:** o SDK do provider e a orquestração explícita em Python
   mantêm o fluxo de controle visível.
 - **Percentual não probabilístico:** os campos e o documento usam uma fórmula

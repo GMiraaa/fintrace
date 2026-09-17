@@ -62,6 +62,7 @@ flowchart TD
     DETAIL --> HISTORY[Histórico da análise<br/>Tentativas e regras]
     DETAIL --> PREVIEW[Miniatura permanente<br/>Primeira página]
     DETAIL --> PDF[Visualizador completo<br/>Endpoint por hash]
+    DETAIL --> REEVAL[Reavaliação explícita<br/>nova revisão do mesmo hash]
     DETAIL --> REF[Validação canônica<br/>Esperado e observado]
     UP --> ICON[Icon]
     TRACE --> ICON
@@ -83,6 +84,13 @@ diretório de entrada apenas o arquivo cujo conteúdo possui aquele hash. O
 detalhe mantém uma miniatura da primeira página e oferece um visualizador
 completo por ação do operador. Ambos são conveniências de auditoria; o registro continua
 contendo evidência suficiente para análise sem depender da releitura integral.
+
+Quando o backend encontra conteúdo já concluído, a área de resultados informa
+que o registro foi reutilizado sem nova chamada à IA. O detalhe oferece
+`Reavaliar documento` como ação explícita; durante a solicitação, o botão fica
+desabilitado e uma tentativa concorrente recebe conflito da API. Dessa forma, o
+cache economiza processamento sem retirar do operador o controle sobre uma nova
+análise.
 
 ## Modelo de navegação
 
