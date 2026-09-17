@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="b_frontend/public/brand/fintrace-logo.png" alt="FinTrace" width="520">
+</p>
+
 # FinTrace
 
 FinTrace é uma plataforma de processamento de eventos corporativos apoiada por
@@ -175,6 +179,7 @@ fintrace/
 │   └── c_golden_records/
 │       └── golden_records.csv
 ├── b_frontend/                   # Interface React/TypeScript por componentes
+│   └── public/brand/             # Logo e ativos estáticos versionados
 ├── c_backend/
 │   ├── src/
 │   │   ├── agent/                # Adaptador do provider e mapeamento da extração
@@ -193,6 +198,11 @@ fintrace/
 ├── f_docs/b_architecture/        # Contratos e decisões arquiteturais
 └── docker-compose.yml
 ```
+
+Arquivos de marca devem permanecer em `b_frontend/public/brand`. A pasta
+`b_frontend/dist` é gerada pelo Vite, está ignorada pelo Git e pode ser
+substituída integralmente a cada build; portanto, não deve ser usada como origem
+de imagens ou outros ativos permanentes.
 
 ## Configuração
 

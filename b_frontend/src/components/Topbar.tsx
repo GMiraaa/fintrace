@@ -33,8 +33,10 @@ export function Topbar({
   return (
     <header className="topbar">
       <a className="brand" href="#top" aria-label="FinTrace — início">
-        <span className="brand-mark" aria-hidden="true"><span /></span>
-        <span><strong>FinTrace</strong><small>Controle de eventos corporativos</small></span>
+        <span className="brand-logo-frame" aria-hidden="true">
+          <img className="brand-logo" src="/brand/fintrace-logo.png" alt="" />
+        </span>
+        <small>Controle de eventos corporativos</small>
       </a>
       <div className="topbar-meta">
         <div className="font-controls" role="group" aria-label="Tamanho do texto da página">

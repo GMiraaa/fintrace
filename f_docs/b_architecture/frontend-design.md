@@ -26,6 +26,12 @@ ou componentes proprietários do BTG Pactual.
 Tipografia: IBM Plex Sans Variable. A família tem desenho técnico sem transformar
 toda informação em monospace. Números usam algarismos tabulares.
 
+A marca oficial usada no cabeçalho e no README fica em
+`b_frontend/public/brand/fintrace-logo.png`. O cabeçalho aplica uma superfície
+branca curta ao redor da imagem para preservar o contraste do lettering
+azul-marinho sobre a barra azul. `dist` é somente resultado de build e nunca é a
+fonte de um ativo visual.
+
 ## Layout
 
 Alinhamento predominantemente à esquerda. A largura favorece leitura de tabelas

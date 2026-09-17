@@ -46,13 +46,9 @@ button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visibl
   padding: 0 max(28px, calc((100vw - 1440px) / 2 + 28px));
 }
 .brand { align-items: center; color: #fff; display: flex; gap: 12px; text-decoration: none; }
-.brand > span:last-child, .brand strong, .brand small { display: block; }
-.brand strong { font-size: 1.3125rem; font-weight: 690; letter-spacing: -.02em; }
-.brand small { color: #abc6e4; font-size: 0.6875rem; margin-top: 1px; }
-.brand-mark { align-items: center; background: #1683e8; display: flex; height: 32px; justify-content: center; position: relative; width: 32px; }
-.brand-mark::before, .brand-mark::after, .brand-mark span { background: #fff; content: ''; height: 2px; position: absolute; width: 14px; }
-.brand-mark::before { transform: translateY(-5px); }
-.brand-mark::after { transform: translateY(5px); }
+.brand-logo-frame { align-items: center; background: #fff; display: flex; height: 48px; padding: 5px 9px; }
+.brand-logo { display: block; height: auto; width: 142px; }
+.brand small { color: #abc6e4; display: block; font-size: 0.6875rem; max-width: 120px; }
 .topbar-meta { align-items: center; display: flex; gap: 18px; }
 .font-controls { align-items: center; background: rgba(255, 255, 255, .08); border: 1px solid rgba(198, 224, 255, .24); display: flex; min-height: 36px; padding: 3px; }
 .font-controls__label { color: #b9d0e8; font-size: 0.6875rem; margin: 0 7px 0 6px; }
@@ -346,6 +342,8 @@ h1 { font-size: clamp(2.25rem, 4.5vw, 3.875rem); font-weight: 610; letter-spacin
 @media (max-width: 720px) {
   .topbar { height: 64px; padding: 0 16px; }
   .brand small, .environment-label { display: none; }
+  .brand-logo-frame { height: 40px; padding: 4px 7px; }
+  .brand-logo { width: 118px; }
   .topbar-meta { gap: 10px; }
   .font-controls__label { display: none; }
   .health { font-size: 0; }
