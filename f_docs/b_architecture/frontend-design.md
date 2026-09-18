@@ -107,7 +107,8 @@ A interface segue a ordem real do trabalho:
 3. Começar pelos documentos que exigem ação;
 4. Ler a decisão do documento selecionado;
 5. Conferir dados somente quando necessário;
-6. Consultar o histórico técnico em uma investigação.
+6. Aprovar conscientemente um registro encaminhado para revisão;
+7. Consultar o histórico técnico em uma investigação.
 
 O primeiro documento com exceção é selecionado automaticamente. Dentro do
 registro, três abas reduzem a carga cognitiva: `Visão geral`, `Dados extraídos`
@@ -125,6 +126,7 @@ Para cada documento, o painel de resultados torna visíveis:
 - As regras associadas, incluindo valor esperado e observado;
 - O registro canônico usado e eventuais conflitos ou possíveis correspondências;
 - A decisão operacional e os motivos de revisão ou acompanhamento;
+- A eventual aprovação humana, sem ocultar os alertas reconhecidos;
 - As tentativas da cascata e os checks preliminares que motivaram a escalada;
 - O PDF original, o JSON individual e o relatório curto de exceções.
 

@@ -1,0 +1,721 @@
+{
+  "schema_version": "2.0",
+  "document_id": "sha256:64e0787afd32c0d99e5407a5fbc6f5048245ba70826563d0b14205074b970668",
+  "source_document": {
+    "file_name": "02_banco_meridional_jcp.pdf",
+    "sha256": "64e0787afd32c0d99e5407a5fbc6f5048245ba70826563d0b14205074b970668",
+    "page_count": 1,
+    "extraction_methods": [
+      "NATIVE_TEXT"
+    ]
+  },
+  "processing_status": "ACCEPTED",
+  "issuer": {
+    "name": {
+      "value": "BANCO MERIDIONAL DO BRASIL S.A.",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "BANCO MERIDIONAL DO BRASIL S.A.",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "REF_ISSUER_MATCH",
+          "status": "PASS",
+          "message": "issuer matches the reference record.",
+          "expected": null,
+          "observed": null
+        }
+      ]
+    },
+    "cnpj": {
+      "value": "60.111.222/0001-55",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "CNPJ/ME nº 60.111.222/0001-55",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "REF_CNPJ_MATCH",
+          "status": "PASS",
+          "message": "cnpj matches the reference record.",
+          "expected": null,
+          "observed": null
+        }
+      ]
+    }
+  },
+  "security": {
+    "isin": {
+      "value": "BRBMRDACNPR7",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "BMRD4 (ISIN BRBMRDACNPR7)",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "REF_ISIN_MATCH",
+          "status": "PASS",
+          "message": "isin matches the reference record.",
+          "expected": null,
+          "observed": null
+        }
+      ]
+    },
+    "ticker": {
+      "value": "BMRD4",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "Código de negociação\nBMRD4 (ISIN BRBMRDACNPR7)",
+          "extraction_method": "NATIVE_TEXT"
+        },
+        {
+          "page": 1,
+          "evidence": "BMRD4 (ISIN BRBMRDACNPR7)",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "REF_TICKER_MATCH",
+          "status": "PASS",
+          "message": "ticker matches the reference record.",
+          "expected": null,
+          "observed": null
+        }
+      ]
+    },
+    "share_class": {
+      "value": "PN",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "Valor bruto por ação preferencial\n(PN)",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "REF_SHARE_CLASS_MATCH",
+          "status": "PASS",
+          "message": "share_class matches the reference record.",
+          "expected": null,
+          "observed": null
+        }
+      ]
+    },
+    "listing_segment": {
+      "value": "Nível 1",
+      "status": "REFERENCE_ENRICHED",
+      "origin": "REFERENCE",
+      "confidence": 95,
+      "agent_agreement": null,
+      "sources": [],
+      "validation": []
+    },
+    "asset_status": {
+      "value": "ativo",
+      "status": "REFERENCE_ENRICHED",
+      "origin": "REFERENCE",
+      "confidence": 95,
+      "agent_agreement": null,
+      "sources": [],
+      "validation": []
+    }
+  },
+  "corporate_action": {
+    "event_type": {
+      "value": "JCP",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "AVISO AOS ACIONISTAS — Juros sobre o Capital Próprio (JCP)",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "EVENT_CLASSIFICATION_SUPPORTED",
+          "status": "PASS",
+          "message": "No material classification conflict was reported.",
+          "expected": "JCP",
+          "observed": "JCP"
+        }
+      ]
+    },
+    "classification_evidence": [
+      {
+        "supports": "JCP",
+        "rationale": "The document title and body explicitly refer to 'Juros sobre o Capital Próprio (JCP)' based on Article 9 of Law 9.249/95, with provisions for withholding tax (IRRF).",
+        "source": {
+          "page": 1,
+          "evidence": "AVISO AOS ACIONISTAS — Juros sobre o Capital Próprio (JCP)",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      },
+      {
+        "supports": "JCP",
+        "rationale": "Notice explicitly declares Juros sobre o Capital Próprio (JCP), references Article 9 of Law 9.249/95, and mentions withholding income tax (IRRF).",
+        "source": {
+          "page": 1,
+          "evidence": "AVISO AOS ACIONISTAS — Juros sobre o Capital Próprio (JCP)",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      }
+    ],
+    "classification_conflicts": [],
+    "dates": {
+      "approval_date": {
+        "value": "2026-06-02",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "reunião realizada em 02 de junho de 2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "DATE_APPROVAL_AFTER_RECORD",
+            "status": "PASS",
+            "message": "Approval date is not after the record date.",
+            "expected": "approval_date <= record_date",
+            "observed": "2026-06-02 > 2026-06-16"
+          }
+        ]
+      },
+      "record_date": {
+        "value": "2026-06-16",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "ao final do dia 16 de junho de\n2026 (\"data com\")",
+            "extraction_method": "NATIVE_TEXT"
+          },
+          {
+            "page": 1,
+            "evidence": "final do dia 16 de junho de 2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "DATE_APPROVAL_AFTER_RECORD",
+            "status": "PASS",
+            "message": "Approval date is not after the record date.",
+            "expected": "approval_date <= record_date",
+            "observed": "2026-06-02 > 2026-06-16"
+          },
+          {
+            "rule": "DATE_RECORD_NOT_BEFORE_EX",
+            "status": "PASS",
+            "message": "Record date occurs before the ex-date.",
+            "expected": "record_date < ex_date",
+            "observed": "2026-06-16 / 2026-06-17"
+          },
+          {
+            "rule": "DATE_PAYMENT_BEFORE_RECORD",
+            "status": "PASS",
+            "message": "Payment date is not before the record date.",
+            "expected": "payment_date >= record_date",
+            "observed": "2026-08-14 / 2026-06-16"
+          }
+        ]
+      },
+      "ex_date": {
+        "value": "2026-06-17",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "As ações passarão a ser negociadas “ex-JCP” a partir de 17 de junho de 2026.",
+            "extraction_method": "NATIVE_TEXT"
+          },
+          {
+            "page": 1,
+            "evidence": "a partir de 17 de junho de 2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "DATE_RECORD_NOT_BEFORE_EX",
+            "status": "PASS",
+            "message": "Record date occurs before the ex-date.",
+            "expected": "record_date < ex_date",
+            "observed": "2026-06-16 / 2026-06-17"
+          }
+        ]
+      },
+      "payment_date": {
+        "value": "2026-08-14",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "Data de pagamento\n14/08/2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "DATE_PAYMENT_BEFORE_RECORD",
+            "status": "PASS",
+            "message": "Payment date is not before the record date.",
+            "expected": "payment_date >= record_date",
+            "observed": "2026-08-14 / 2026-06-16"
+          }
+        ]
+      },
+      "credit_date": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      },
+      "fraction_period_start": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      },
+      "fraction_period_end": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      }
+    },
+    "financials": {
+      "gross_amount_per_share": {
+        "value": "0.173842",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "R$ 0,1738420000",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "FIN_GROSS_NET_TAX_CONSISTENT",
+            "status": "PASS",
+            "message": "Gross, tax rate, and net amount are mathematically consistent.",
+            "expected": "0.143419650",
+            "observed": "0.14341965"
+          }
+        ]
+      },
+      "net_amount_per_share": {
+        "value": "0.14341965",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "R$ 0,1434196500",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "FIN_TAX_DEPENDS_ON_BENEFICIARY",
+            "status": "WARN",
+            "message": "Tax depends on beneficiary conditions; a universal net amount must not be derived.",
+            "expected": null,
+            "observed": "0.14341965"
+          },
+          {
+            "rule": "FIN_TAX_CONDITIONAL_NET_DISCLOSED",
+            "status": "WARN",
+            "message": "The net amount is explicitly disclosed for the stated withholding rule, but may differ for exempt or immune beneficiaries.",
+            "expected": "Document-disclosed net amount qualified by beneficiary tax treatment",
+            "observed": "0.14341965"
+          },
+          {
+            "rule": "FIN_GROSS_NET_TAX_CONSISTENT",
+            "status": "PASS",
+            "message": "Gross, tax rate, and net amount are mathematically consistent.",
+            "expected": "0.143419650",
+            "observed": "0.14341965"
+          }
+        ]
+      },
+      "tax_rate_percent": {
+        "value": "17.5",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "IRRF na fonte\n17,5%",
+            "extraction_method": "NATIVE_TEXT"
+          },
+          {
+            "page": 1,
+            "evidence": "alíquota de 17,5%",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "FIN_GROSS_NET_TAX_CONSISTENT",
+            "status": "PASS",
+            "message": "Gross, tax rate, and net amount are mathematically consistent.",
+            "expected": "0.143419650",
+            "observed": "0.14341965"
+          }
+        ]
+      },
+      "tax_treatment": {
+        "value": "TAX_DEPENDS_ON_BENEFICIARY",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "ressalvados os acionistas comprovadamente imunes ou isentos.",
+            "extraction_method": "NATIVE_TEXT"
+          },
+          {
+            "page": 1,
+            "evidence": "ressalvados os acionistas comprovadamente imunes ou isentos",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "FIN_TAX_DEPENDS_ON_BENEFICIARY",
+            "status": "WARN",
+            "message": "Tax depends on beneficiary conditions; a universal net amount must not be derived.",
+            "expected": null,
+            "observed": "0.14341965"
+          },
+          {
+            "rule": "FIN_TAX_CONDITIONAL_NET_DISCLOSED",
+            "status": "WARN",
+            "message": "The net amount is explicitly disclosed for the stated withholding rule, but may differ for exempt or immune beneficiaries.",
+            "expected": "Document-disclosed net amount qualified by beneficiary tax treatment",
+            "observed": "0.14341965"
+          }
+        ]
+      },
+      "currency": {
+        "value": "BRL",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "R$ 0,1738420000",
+            "extraction_method": "NATIVE_TEXT"
+          },
+          {
+            "page": 1,
+            "evidence": "R$",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": []
+      },
+      "ratio": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      },
+      "attributed_cost_per_share": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      }
+    }
+  },
+  "extraction_attempts": [
+    {
+      "strategy": "BASIC_LLM",
+      "outcome": "SUFFICIENT",
+      "pass_number": 1,
+      "model": "gemini-3.5-flash-lite",
+      "unresolved_fields": [],
+      "error": null
+    },
+    {
+      "strategy": "BASIC_LLM",
+      "outcome": "SUFFICIENT",
+      "pass_number": 2,
+      "model": "gemini-3.5-flash-lite",
+      "unresolved_fields": [],
+      "error": null
+    }
+  ],
+  "preliminary_checks": [
+    {
+      "code": "REQUIRED_FIELDS",
+      "passed": true,
+      "message": "Todos os campos materiais foram resolvidos."
+    },
+    {
+      "code": "AGENT_CONSENSUS",
+      "passed": true,
+      "message": "As duas extrações básicas concordam nos campos informados."
+    },
+    {
+      "code": "EVIDENCE_GROUNDING",
+      "passed": true,
+      "message": "Todas as evidências foram localizadas nas páginas citadas."
+    },
+    {
+      "code": "GOLDEN_VALIDATION",
+      "passed": true,
+      "message": "Identidade confirmada sem conflitos na base de referência."
+    },
+    {
+      "code": "DATE_COHERENCE",
+      "passed": true,
+      "message": "As relações temporais avaliáveis são coerentes."
+    },
+    {
+      "code": "FINANCIAL_COHERENCE",
+      "passed": true,
+      "message": "Os valores financeiros avaliáveis são coerentes."
+    },
+    {
+      "code": "CLASSIFICATION_CONSISTENCY",
+      "passed": true,
+      "message": "A classificação não apresenta contradições materiais."
+    },
+    {
+      "code": "OCR_QUALITY",
+      "passed": true,
+      "message": "As páginas lidas por OCR possuem conteúdo suficiente."
+    }
+  ],
+  "document_confidence": {
+    "score": 94,
+    "completion_percentage": 100,
+    "required_fields": [
+      "issuer.name",
+      "security.isin",
+      "security.ticker",
+      "corporate_action.event_type",
+      "corporate_action.dates.approval_date",
+      "corporate_action.dates.record_date",
+      "corporate_action.dates.ex_date",
+      "corporate_action.dates.payment_date",
+      "corporate_action.financials.gross_amount_per_share",
+      "corporate_action.financials.currency"
+    ],
+    "resolved_fields": [
+      "issuer.name",
+      "security.isin",
+      "security.ticker",
+      "corporate_action.event_type",
+      "corporate_action.dates.approval_date",
+      "corporate_action.dates.record_date",
+      "corporate_action.dates.ex_date",
+      "corporate_action.dates.payment_date",
+      "corporate_action.financials.gross_amount_per_share",
+      "corporate_action.financials.currency"
+    ],
+    "missing_fields": [],
+    "rationale": "10 de 10 campos materiais foram resolvidos. O score é a média dos percentuais de confiança dos campos materiais; campos ausentes contribuem com zero."
+  },
+  "reference_validation": {
+    "exact_match": true,
+    "matched_by": [
+      "issuer",
+      "cnpj",
+      "isin",
+      "ticker",
+      "share_class"
+    ],
+    "reference_record": {
+      "issuer": "Banco Meridional do Brasil S.A.",
+      "cnpj": "60.111.222/0001-55",
+      "isin": "BRBMRDACNPR7",
+      "ticker": "BMRD4",
+      "share_class": "PN",
+      "listing_segment": "Nível 1",
+      "status": "ativo"
+    },
+    "conflicts": [],
+    "possible_matches": []
+  },
+  "validations": [
+    {
+      "rule": "REF_ISSUER_MATCH",
+      "status": "PASS",
+      "message": "issuer matches the reference record.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "REF_CNPJ_MATCH",
+      "status": "PASS",
+      "message": "cnpj matches the reference record.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "REF_ISIN_MATCH",
+      "status": "PASS",
+      "message": "isin matches the reference record.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "REF_TICKER_MATCH",
+      "status": "PASS",
+      "message": "ticker matches the reference record.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "REF_SHARE_CLASS_MATCH",
+      "status": "PASS",
+      "message": "share_class matches the reference record.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "DATE_APPROVAL_AFTER_RECORD",
+      "status": "PASS",
+      "message": "Approval date is not after the record date.",
+      "expected": "approval_date <= record_date",
+      "observed": "2026-06-02 > 2026-06-16"
+    },
+    {
+      "rule": "DATE_RECORD_NOT_BEFORE_EX",
+      "status": "PASS",
+      "message": "Record date occurs before the ex-date.",
+      "expected": "record_date < ex_date",
+      "observed": "2026-06-16 / 2026-06-17"
+    },
+    {
+      "rule": "DATE_PAYMENT_BEFORE_RECORD",
+      "status": "PASS",
+      "message": "Payment date is not before the record date.",
+      "expected": "payment_date >= record_date",
+      "observed": "2026-08-14 / 2026-06-16"
+    },
+    {
+      "rule": "FIN_TAX_DEPENDS_ON_BENEFICIARY",
+      "status": "WARN",
+      "message": "Tax depends on beneficiary conditions; a universal net amount must not be derived.",
+      "expected": null,
+      "observed": "0.14341965"
+    },
+    {
+      "rule": "FIN_TAX_CONDITIONAL_NET_DISCLOSED",
+      "status": "WARN",
+      "message": "The net amount is explicitly disclosed for the stated withholding rule, but may differ for exempt or immune beneficiaries.",
+      "expected": "Document-disclosed net amount qualified by beneficiary tax treatment",
+      "observed": "0.14341965"
+    },
+    {
+      "rule": "FIN_GROSS_NET_TAX_CONSISTENT",
+      "status": "PASS",
+      "message": "Gross, tax rate, and net amount are mathematically consistent.",
+      "expected": "0.143419650",
+      "observed": "0.14341965"
+    },
+    {
+      "rule": "EVENT_CLASSIFICATION_SUPPORTED",
+      "status": "PASS",
+      "message": "No material classification conflict was reported.",
+      "expected": "JCP",
+      "observed": "JCP"
+    }
+  ],
+  "review": {
+    "required": false,
+    "reasons": []
+  },
+  "follow_up": {
+    "required": false,
+    "reasons": []
+  },
+  "manual_review": {
+    "approved": false,
+    "approved_at": null,
+    "previous_status": null,
+    "acknowledged_reasons": []
+  },
+  "exceptions": []
+}

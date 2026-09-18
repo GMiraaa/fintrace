@@ -6,6 +6,10 @@ export function getDocumentFileUrl(documentId: string): string {
   return `${API_BASE_URL}/api/documents/${encodeURIComponent(documentId)}/file`
 }
 
+export function getDocumentPreviewUrl(documentId: string): string {
+  return `${API_BASE_URL}/api/documents/${encodeURIComponent(documentId)}/preview`
+}
+
 export async function getHealth(): Promise<HealthResponse> {
   const response = await fetch(`${API_BASE_URL}/api/health`)
   if (!response.ok) throw new Error('Não foi possível acessar o serviço de processamento.')
@@ -37,6 +41,18 @@ export async function reevaluateDocument(documentId: string): Promise<BatchUploa
   const payload = await response.json().catch(() => null)
   if (!response.ok) {
     throw new Error(payload?.detail || 'Não foi possível reavaliar o documento.')
+  }
+  return payload
+}
+
+export async function approveDocument(documentId: string): Promise<BatchUploadResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/documents/${encodeURIComponent(documentId)}/approve`,
+    { method: 'POST' },
+  )
+  const payload = await response.json().catch(() => null)
+  if (!response.ok) {
+    throw new Error(payload?.detail || 'Não foi possível aprovar o documento.')
   }
   return payload
 }

@@ -1,0 +1,621 @@
+{
+  "schema_version": "2.0",
+  "document_id": "sha256:147d83f038f6ca94495a5d5248f36a6feedee7ae9a5cebc011d40e1f14d68068",
+  "source_document": {
+    "file_name": "06_petroquimica_litoral_grupamento.pdf",
+    "sha256": "147d83f038f6ca94495a5d5248f36a6feedee7ae9a5cebc011d40e1f14d68068",
+    "page_count": 1,
+    "extraction_methods": [
+      "NATIVE_TEXT"
+    ]
+  },
+  "processing_status": "REVIEW_REQUIRED",
+  "issuer": {
+    "name": {
+      "value": "Petroquímica Litoral S.A.",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "PETROQUÍMICA LITORAL S.A.",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "REF_ISSUER_MATCH",
+          "status": "PASS",
+          "message": "issuer matches the reference record.",
+          "expected": null,
+          "observed": null
+        }
+      ]
+    },
+    "cnpj": {
+      "value": "55.666.777/0001-08",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "Companhia Aberta  |  CNPJ/ME nº 55.666.777/0001-08  |  NIRE 35.300.000.006",
+          "extraction_method": "NATIVE_TEXT"
+        },
+        {
+          "page": 1,
+          "evidence": "CNPJ/ME nº 55.666.777/0001-08",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "REF_CNPJ_MATCH",
+          "status": "PASS",
+          "message": "cnpj matches the reference record.",
+          "expected": null,
+          "observed": null
+        }
+      ]
+    }
+  },
+  "security": {
+    "isin": {
+      "value": "BRPQLTACNOR8",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "Código de negociação\nPQLT3 (ISIN BRPQLTACNOR8)",
+          "extraction_method": "NATIVE_TEXT"
+        },
+        {
+          "page": 1,
+          "evidence": "PQLT3 (ISIN BRPQLTACNOR8)",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "REF_ISIN_MATCH",
+          "status": "PASS",
+          "message": "isin matches the reference record.",
+          "expected": null,
+          "observed": null
+        }
+      ]
+    },
+    "ticker": {
+      "value": "PQLT3",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "Código de negociação\nPQLT3 (ISIN BRPQLTACNOR8)",
+          "extraction_method": "NATIVE_TEXT"
+        },
+        {
+          "page": 1,
+          "evidence": "PQLT3 (ISIN BRPQLTACNOR8)",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "REF_TICKER_MATCH",
+          "status": "PASS",
+          "message": "ticker matches the reference record.",
+          "expected": null,
+          "observed": null
+        }
+      ]
+    },
+    "share_class": {
+      "value": "ON",
+      "status": "REFERENCE_ENRICHED",
+      "origin": "UNKNOWN",
+      "confidence": 20,
+      "agent_agreement": 50,
+      "sources": [],
+      "validation": [
+        {
+          "rule": "REF_SHARE_CLASS_MATCH",
+          "status": "PASS",
+          "message": "share_class matches the reference record.",
+          "expected": null,
+          "observed": null
+        }
+      ]
+    },
+    "listing_segment": {
+      "value": "Nível 2",
+      "status": "REFERENCE_ENRICHED",
+      "origin": "REFERENCE",
+      "confidence": 95,
+      "agent_agreement": null,
+      "sources": [],
+      "validation": []
+    },
+    "asset_status": {
+      "value": "ativo",
+      "status": "REFERENCE_ENRICHED",
+      "origin": "REFERENCE",
+      "confidence": 95,
+      "agent_agreement": null,
+      "sources": [],
+      "validation": []
+    }
+  },
+  "corporate_action": {
+    "event_type": {
+      "value": "REVERSE_SPLIT",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "AVISO AOS ACIONISTAS — Grupamento de Ações (Inplit)",
+          "extraction_method": "NATIVE_TEXT"
+        },
+        {
+          "page": 1,
+          "evidence": "Grupamento de Ações (Inplit)",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "EVENT_CLASSIFICATION_SUPPORTED",
+          "status": "PASS",
+          "message": "No material classification conflict was reported.",
+          "expected": "REVERSE_SPLIT",
+          "observed": "REVERSE_SPLIT"
+        }
+      ]
+    },
+    "classification_evidence": [
+      {
+        "supports": "REVERSE_SPLIT",
+        "rationale": "Notice title and text state 'Grupamento de Ações (Inplit)' and describe consolidating existing shares into fewer resulting shares.",
+        "source": {
+          "page": 1,
+          "evidence": "realizada em 30 de maio de 2026 aprovou o grupamento da totalidade das ações representativas do capital social, na proporção de 10 (dez) ações existentes para 1 (uma) ação",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      },
+      {
+        "supports": "REVERSE_SPLIT",
+        "rationale": "Notice describes the consolidation of shares in the proportion of 10 existing shares to 1 resulting share without changing total share capital.",
+        "source": {
+          "page": 1,
+          "evidence": "aprovou o grupamento da totalidade das ações representativas do capital social, na proporção de 10 (dez) ações existentes para 1 (uma) ação, sem modificação do valor do capital social.",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      }
+    ],
+    "classification_conflicts": [],
+    "dates": {
+      "approval_date": {
+        "value": "2026-05-30",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "Assembleia Geral Extraordinária\nrealizada em 30 de maio de 2026 aprovou",
+            "extraction_method": "NATIVE_TEXT"
+          },
+          {
+            "page": 1,
+            "evidence": "Assembleia Geral Extraordinária realizada em 30 de maio de 2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "DATE_APPROVAL_AFTER_RECORD",
+            "status": "PASS",
+            "message": "Approval date is not after the record date.",
+            "expected": "approval_date <= record_date",
+            "observed": "2026-05-30 > 2026-06-26"
+          }
+        ]
+      },
+      "record_date": {
+        "value": "2026-06-26",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "A posição acionária considerada para fins de grupamento será a do final do pregão de 26\nde junho de 2026 (data-base do grupamento).",
+            "extraction_method": "NATIVE_TEXT"
+          },
+          {
+            "page": 1,
+            "evidence": "A posição acionária considerada para fins de grupamento será a do final do pregão de 26 de junho de 2026 (data-base do grupamento).",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "DATE_APPROVAL_AFTER_RECORD",
+            "status": "PASS",
+            "message": "Approval date is not after the record date.",
+            "expected": "approval_date <= record_date",
+            "observed": "2026-05-30 > 2026-06-26"
+          }
+        ]
+      },
+      "ex_date": {
+        "value": null,
+        "status": "CONFLICT",
+        "origin": "DOCUMENT",
+        "confidence": 10,
+        "agent_agreement": 50,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "A partir de 29 de junho de 2026, as ações passarão a ser negociadas já grupadas.",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": []
+      },
+      "payment_date": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      },
+      "credit_date": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      },
+      "fraction_period_start": {
+        "value": "2026-06-29",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "Os acionistas que, em decorrência do grupamento, ficarem com frações de ações terão o período de 29\nde junho de 2026 a 28 de julho de 2026",
+            "extraction_method": "NATIVE_TEXT"
+          },
+          {
+            "page": 1,
+            "evidence": "período de 29 de junho de 2026 a 28 de julho de 2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": []
+      },
+      "fraction_period_end": {
+        "value": "2026-07-28",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "período de 29\nde junho de 2026 a 28 de julho de 2026",
+            "extraction_method": "NATIVE_TEXT"
+          },
+          {
+            "page": 1,
+            "evidence": "período de 29 de junho de 2026 a 28 de julho de 2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": []
+      }
+    },
+    "financials": {
+      "gross_amount_per_share": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      },
+      "net_amount_per_share": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      },
+      "tax_rate_percent": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      },
+      "tax_treatment": {
+        "value": "NOT_APPLICABLE",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "Grupamento de Ações (Inplit)",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": []
+      },
+      "currency": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      },
+      "ratio": {
+        "value": {
+          "kind": "RESULTING_PER_EXISTING",
+          "numerator": "1",
+          "denominator": "10",
+          "percentage": null
+        },
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "na proporção de 10 (dez) ações existentes para 1 (uma) ação",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "FIN_RATIO_VALID",
+            "status": "PASS",
+            "message": "Corporate action ratio is positive.",
+            "expected": "numerator > 0 and denominator > 0",
+            "observed": "1:10 (RESULTING_PER_EXISTING)"
+          }
+        ]
+      },
+      "attributed_cost_per_share": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      }
+    }
+  },
+  "extraction_attempts": [
+    {
+      "strategy": "BASIC_LLM",
+      "outcome": "SUFFICIENT",
+      "pass_number": 1,
+      "model": "gemini-3.5-flash-lite",
+      "unresolved_fields": [],
+      "error": null
+    },
+    {
+      "strategy": "BASIC_LLM",
+      "outcome": "SUFFICIENT",
+      "pass_number": 2,
+      "model": "gemini-3.5-flash-lite",
+      "unresolved_fields": [],
+      "error": null
+    }
+  ],
+  "preliminary_checks": [
+    {
+      "code": "REQUIRED_FIELDS",
+      "passed": true,
+      "message": "Todos os campos materiais foram resolvidos."
+    },
+    {
+      "code": "AGENT_CONSENSUS",
+      "passed": false,
+      "message": "Divergência ou ausência de consenso em: corporate_action.dates.ex_date, security.share_class"
+    },
+    {
+      "code": "EVIDENCE_GROUNDING",
+      "passed": true,
+      "message": "Todas as evidências foram localizadas nas páginas citadas."
+    },
+    {
+      "code": "GOLDEN_VALIDATION",
+      "passed": true,
+      "message": "Identidade confirmada sem conflitos na base de referência."
+    },
+    {
+      "code": "DATE_COHERENCE",
+      "passed": true,
+      "message": "As relações temporais avaliáveis são coerentes."
+    },
+    {
+      "code": "FINANCIAL_COHERENCE",
+      "passed": true,
+      "message": "Os valores financeiros avaliáveis são coerentes."
+    },
+    {
+      "code": "CLASSIFICATION_CONSISTENCY",
+      "passed": true,
+      "message": "A classificação não apresenta contradições materiais."
+    },
+    {
+      "code": "OCR_QUALITY",
+      "passed": true,
+      "message": "As páginas lidas por OCR possuem conteúdo suficiente."
+    }
+  ],
+  "document_confidence": {
+    "score": 94,
+    "completion_percentage": 100,
+    "required_fields": [
+      "issuer.name",
+      "security.isin",
+      "security.ticker",
+      "corporate_action.event_type",
+      "corporate_action.dates.approval_date",
+      "corporate_action.dates.record_date",
+      "corporate_action.financials.ratio"
+    ],
+    "resolved_fields": [
+      "issuer.name",
+      "security.isin",
+      "security.ticker",
+      "corporate_action.event_type",
+      "corporate_action.dates.approval_date",
+      "corporate_action.dates.record_date",
+      "corporate_action.financials.ratio"
+    ],
+    "missing_fields": [],
+    "rationale": "7 de 7 campos materiais foram resolvidos. O score é a média dos percentuais de confiança dos campos materiais; campos ausentes contribuem com zero."
+  },
+  "reference_validation": {
+    "exact_match": true,
+    "matched_by": [
+      "issuer",
+      "cnpj",
+      "isin",
+      "ticker",
+      "share_class"
+    ],
+    "reference_record": {
+      "issuer": "Petroquímica Litoral S.A.",
+      "cnpj": "55.666.777/0001-08",
+      "isin": "BRPQLTACNOR8",
+      "ticker": "PQLT3",
+      "share_class": "ON",
+      "listing_segment": "Nível 2",
+      "status": "ativo"
+    },
+    "conflicts": [],
+    "possible_matches": []
+  },
+  "validations": [
+    {
+      "rule": "REF_ISSUER_MATCH",
+      "status": "PASS",
+      "message": "issuer matches the reference record.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "REF_CNPJ_MATCH",
+      "status": "PASS",
+      "message": "cnpj matches the reference record.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "REF_ISIN_MATCH",
+      "status": "PASS",
+      "message": "isin matches the reference record.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "REF_TICKER_MATCH",
+      "status": "PASS",
+      "message": "ticker matches the reference record.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "REF_SHARE_CLASS_MATCH",
+      "status": "PASS",
+      "message": "share_class matches the reference record.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "DATE_APPROVAL_AFTER_RECORD",
+      "status": "PASS",
+      "message": "Approval date is not after the record date.",
+      "expected": "approval_date <= record_date",
+      "observed": "2026-05-30 > 2026-06-26"
+    },
+    {
+      "rule": "FIN_RATIO_VALID",
+      "status": "PASS",
+      "message": "Corporate action ratio is positive.",
+      "expected": "numerator > 0 and denominator > 0",
+      "observed": "1:10 (RESULTING_PER_EXISTING)"
+    },
+    {
+      "rule": "EVENT_CLASSIFICATION_SUPPORTED",
+      "status": "PASS",
+      "message": "No material classification conflict was reported.",
+      "expected": "REVERSE_SPLIT",
+      "observed": "REVERSE_SPLIT"
+    }
+  ],
+  "review": {
+    "required": true,
+    "reasons": [
+      {
+        "code": "CRITICAL_FIELD_CONFIDENCE_BELOW_THRESHOLD",
+        "category": "REVIEW_EXCEPTION",
+        "message": "Critical field confidence is below 75%: dates.ex_date (10%)."
+      }
+    ]
+  },
+  "follow_up": {
+    "required": false,
+    "reasons": []
+  },
+  "manual_review": {
+    "approved": false,
+    "approved_at": null,
+    "previous_status": null,
+    "acknowledged_reasons": []
+  },
+  "exceptions": [
+    {
+      "code": "CRITICAL_FIELD_CONFIDENCE_BELOW_THRESHOLD",
+      "category": "REVIEW_EXCEPTION",
+      "message": "Critical field confidence is below 75%: dates.ex_date (10%)."
+    }
+  ]
+}

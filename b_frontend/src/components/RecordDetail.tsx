@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
-import { getDocumentFileUrl } from '../api'
+import { getDocumentFileUrl, getDocumentPreviewUrl } from '../api'
 import {
   DATE_LABELS,
   EVENT_TYPE_LABELS,
@@ -46,30 +46,39 @@ type DetailTab = (typeof DETAIL_TABS)[number][0]
 type DisplayField = AuditableField<string | RatioValue>
 
 interface RecordDetailProps {
+  approving: boolean
+  onApprove: (documentId: string) => void
   onReevaluate: (documentId: string) => void
   record: DocumentRecord
   reevaluating: boolean
 }
 
-export function RecordDetail({ onReevaluate, record, reevaluating }: RecordDetailProps) {
+export function RecordDetail({ approving, onApprove, onReevaluate, record, reevaluating }: RecordDetailProps) {
   const [activeTab, setActiveTab] = useState<DetailTab>('resumo')
   const [showDocument, setShowDocument] = useState(false)
+  const [showApprovalModal, setShowApprovalModal] = useState(false)
   const action = record.corporate_action
   const eventType = action.event_type.value
     ? EVENT_TYPE_LABELS[action.event_type.value] || 'Evento não identificado'
     : 'Evento não identificado'
   const documentUrl = getDocumentFileUrl(record.document_id)
+  const previewUrl = getDocumentPreviewUrl(record.document_id)
 
   useEffect(() => {
     setActiveTab('resumo')
     setShowDocument(false)
+    setShowApprovalModal(false)
   }, [record.document_id])
+
+  useEffect(() => {
+    if (record.processing_status !== 'REVIEW_REQUIRED') setShowApprovalModal(false)
+  }, [record.processing_status])
 
   return (
     <article className="audit-record">
       <header className="record-header">
         <div className="record-header__main">
-          <StatusPill status={record.processing_status} />
+          <StatusPill record={record} />
           <h3>{record.issuer.name.value || 'Emissor não identificado'}</h3>
           <p>{eventType}<span aria-hidden="true">•</span>{record.security.ticker.value || 'Código não identificado'}<span aria-hidden="true">•</span>{record.security.isin.value || 'ISIN não identificado'}</p>
           <div className="record-actions">
@@ -85,9 +94,20 @@ export function RecordDetail({ onReevaluate, record, reevaluating }: RecordDetai
               <Icon name="refresh" size={17} />
               {reevaluating ? 'Reavaliando…' : 'Reavaliar documento'}
             </button>
+            {record.processing_status === 'REVIEW_REQUIRED' && (
+              <button
+                className="approval-action"
+                disabled={approving}
+                onClick={() => setShowApprovalModal(true)}
+                type="button"
+              >
+                <Icon name="check" size={17} />
+                {approving ? 'Aprovando…' : 'Aprovar documento'}
+              </button>
+            )}
           </div>
         </div>
-        <DocumentThumbnail fileName={record.source_document.file_name} onOpen={() => setShowDocument(true)} url={documentUrl} />
+        <DocumentThumbnail fileName={record.source_document.file_name} onOpen={() => setShowDocument(true)} previewUrl={previewUrl} url={documentUrl} />
       </header>
 
       {showDocument && <DocumentViewer record={record} url={documentUrl} />}
@@ -111,7 +131,114 @@ export function RecordDetail({ onReevaluate, record, reevaluating }: RecordDetai
       {activeTab === 'resumo' && <Overview record={record} />}
       {activeTab === 'dados' && <ExtractedData action={action} record={record} />}
       {activeTab === 'historico' && <AnalysisHistory record={record} />}
+      {showApprovalModal && (
+        <ApprovalModal
+          approving={approving}
+          onCancel={() => setShowApprovalModal(false)}
+          onConfirm={() => onApprove(record.document_id)}
+          record={record}
+        />
+      )}
     </article>
+  )
+}
+
+function ApprovalModal({
+  approving,
+  onCancel,
+  onConfirm,
+  record,
+}: {
+  approving: boolean
+  onCancel: () => void
+  onConfirm: () => void
+  record: DocumentRecord
+}) {
+  const confirmButtonRef = useRef<HTMLButtonElement>(null)
+  const modalRef = useRef<HTMLElement>(null)
+  const approvingRef = useRef(approving)
+  const onCancelRef = useRef(onCancel)
+  const reasons = summarizeRoutingReasons(record.review?.reasons || [])
+  approvingRef.current = approving
+  onCancelRef.current = onCancel
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    confirmButtonRef.current?.focus()
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !approvingRef.current) {
+        onCancelRef.current()
+        return
+      }
+      if (event.key !== 'Tab') return
+      const focusable = Array.from(
+        modalRef.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') || [],
+      )
+      if (!focusable.length) return
+      const first = focusable[0]
+      const last = focusable.at(-1)!
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = previousOverflow
+      previouslyFocused?.focus()
+    }
+  }, [])
+
+  return (
+    <div
+      className="modal-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !approving) onCancel()
+      }}
+    >
+      <section
+        aria-describedby="approval-modal-description"
+        aria-labelledby="approval-modal-title"
+        aria-modal="true"
+        className="approval-modal"
+        ref={modalRef}
+        role="dialog"
+      >
+        <div className="approval-modal__icon"><Icon name="shield" size={24} /></div>
+        <div className="approval-modal__content">
+          <span className="approval-modal__eyebrow">Decisão do operador</span>
+          <h4 id="approval-modal-title">Aprovar este documento?</h4>
+          <p id="approval-modal-description">
+            Confirme somente depois de revisar os dados, as evidências e as regras
+            relacionadas. A decisão ficará registrada no histórico.
+          </p>
+          <strong className="approval-modal__document">{record.source_document.file_name}</strong>
+          {reasons.length > 0 && (
+            <div className="approval-modal__reasons">
+              <strong>Alertas que serão reconhecidos</strong>
+              <ul>{reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
+            </div>
+          )}
+        </div>
+        <div className="approval-modal__actions">
+          <button className="secondary-action" disabled={approving} onClick={onCancel} type="button">
+            Cancelar
+          </button>
+          <button className="approval-action" disabled={approving} onClick={onConfirm} ref={confirmButtonRef} type="button">
+            <Icon name="check" size={17} />
+            {approving ? 'Aprovando…' : 'Confirmar aprovação'}
+          </button>
+        </div>
+      </section>
+    </div>
   )
 }
 
@@ -134,10 +261,13 @@ function DecisionPanel({ record }: { record: DocumentRecord }) {
     completion_percentage: 0,
     missing_fields: [],
   }
+  const manuallyApproved = record.manual_review?.approved
   const accepted = record.processing_status === 'ACCEPTED'
-  const title = accepted ? 'Registro pronto para uso' : STATUS_LABELS[record.processing_status]
-  const guidance = accepted
-    ? 'Os identificadores, os campos críticos e as regras de coerência não apresentaram bloqueios.'
+  const title = manuallyApproved ? 'Aprovado após revisão humana' : accepted ? 'Registro pronto para uso' : STATUS_LABELS[record.processing_status]
+  const guidance = manuallyApproved
+    ? 'Um operador conferiu as informações e aceitou conscientemente os alertas registrados abaixo.'
+    : accepted
+      ? 'Os identificadores, os campos críticos e as regras de coerência não apresentaram bloqueios.'
     : record.processing_status === 'PENDING_INFORMATION'
       ? 'Acompanhe a divulgação da informação pendente antes de concluir o evento.'
       : record.processing_status === 'FAILED'
@@ -194,7 +324,7 @@ function Overview({ record }: { record: DocumentRecord }) {
         />
         <ControlItem detail={failedRules.length ? `${failedRules.length} regra(s) reprovaram o registro` : 'Todas as regras aplicáveis foram aprovadas'} label="Regras de coerência" ok={!failedRules.length} />
         <ControlItem
-          detail={STATUS_LABELS[record.processing_status]}
+          detail={record.manual_review?.approved ? 'Aprovado após revisão humana' : STATUS_LABELS[record.processing_status]}
           label="Encaminhamento"
           neutral={record.processing_status === 'PENDING_INFORMATION'}
           ok={record.processing_status === 'ACCEPTED'}
@@ -265,6 +395,26 @@ function AnalysisHistory({ record }: { record: DocumentRecord }) {
         <h4>Histórico técnico da análise</h4>
         <p>Use esta seção para investigar como o documento foi lido e quais regras sustentam a decisão. Ela não é necessária para a conferência cotidiana.</p>
       </section>
+
+      {record.manual_review?.approved && (
+        <section className="history-section">
+          <h4>Decisão do operador</h4>
+          <div className="validation-row">
+            <ValidationState status="PASS" />
+            <span>
+              <strong>Documento aprovado após revisão humana</strong>
+              <small>
+                {record.manual_review.approved_at
+                  ? `Aprovação registrada em ${new Date(record.manual_review.approved_at).toLocaleString('pt-BR')}.`
+                  : 'Aprovação registrada.'}
+                {record.manual_review.acknowledged_reasons.length
+                  ? ` Motivos reconhecidos: ${summarizeRoutingReasons(record.manual_review.acknowledged_reasons).join(' ')}`
+                  : ''}
+              </small>
+            </span>
+          </div>
+        </section>
+      )}
 
       {attempts.length > 0 && (
         <section className="history-section">
@@ -417,8 +567,10 @@ function ControlItem({ label, detail, ok, neutral = false }: { label: string; de
   return <div className={`control-item control-item--${state}`}><span>{ok ? <Icon name="check" size={15} /> : '!'}</span><div><strong>{label}</strong><small>{detail}</small></div></div>
 }
 
-function StatusPill({ status }: { status: ProcessingStatus }) {
-  return <span className={`status-pill status-pill--${status.toLowerCase()}`}>{STATUS_LABELS[status] || status}</span>
+function StatusPill({ record }: { record: DocumentRecord }) {
+  const status = record.processing_status
+  const label = record.manual_review?.approved ? 'Aprovado após revisão' : STATUS_LABELS[status] || status
+  return <span className={`status-pill status-pill--${status.toLowerCase()}`}>{label}</span>
 }
 
 function confidenceReason(field: DisplayField): string {

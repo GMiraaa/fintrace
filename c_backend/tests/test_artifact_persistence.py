@@ -3,6 +3,8 @@ from typing import Any
 from src.persistence import ArtifactRepository
 from src.pipeline.processor import ProcessingPipeline
 
+from .factories import valid_document_record
+
 
 class MemoryArtifactRepository:
     def __init__(self) -> None:
@@ -51,3 +53,20 @@ def test_pipeline_persists_same_payload_to_file_and_repository(tmp_path) -> None
 
     assert (tmp_path / "notice.json").is_file()
     assert repository.artifacts[0]["payload"]["value"] == "test"
+
+
+def test_pipeline_persists_operator_updated_record(tmp_path) -> None:
+    repository = MemoryArtifactRepository()
+    pipeline = ProcessingPipeline(
+        preprocessor=object(),
+        agent=object(),
+        reference_repository=object(),
+        output_dir=tmp_path,
+        artifact_repository=repository,
+    )
+    record = valid_document_record()
+
+    pipeline.persist_record(record)
+
+    assert (tmp_path / "notice.json").is_file()
+    assert repository.artifacts[0]["document_id"] == record.document_id

@@ -3,10 +3,13 @@ import hashlib
 from pathlib import Path
 
 import httpx
+import pymupdf
 import pytest
 
 from src.config import AppSettings
 from src.main import create_app
+from src.models.enums import ExceptionCategory, ProcessingStatus
+from src.models.schemas import RoutingReason
 from src.persistence import DocumentClaim
 from src.pipeline.processor import BatchProcessingResult
 from src.routing.report import build_exception_report
@@ -18,6 +21,8 @@ class StubPipeline:
     def __init__(self, registry=None) -> None:
         self.received: list[Path] = []
         self.artifact_repository = registry
+        self.persisted_records = []
+        self.persisted_reports = []
 
     def process_batch(self, paths, *, existing_records=()):
         self.received.extend(Path(path) for path in paths)
@@ -33,6 +38,14 @@ class StubPipeline:
         report = build_exception_report(records)
         return BatchProcessingResult(records=records, report=report)
 
+    def persist_record(self, record):
+        self.persisted_records.append(record.model_copy(deep=True))
+        if self.artifact_repository is not None:
+            self.artifact_repository.store(record)
+
+    def persist_report(self, report):
+        self.persisted_reports.append(report.model_copy(deep=True))
+
 
 class MemoryDocumentRegistry:
     def __init__(self) -> None:
@@ -47,6 +60,24 @@ class MemoryDocumentRegistry:
             return DocumentClaim(acquired=True, state="PROCESSING")
         state, record = current
         return DocumentClaim(acquired=False, state=state, record=record)
+
+    def get_document(self, document_id: str):
+        digest = document_id.removeprefix("sha256:")
+        state, record = self.claims.get(digest, ("MISSING", None))
+        return record.model_copy(deep=True) if state == "COMPLETED" and record else None
+
+    def list_documents(self):
+        return [
+            record.model_copy(deep=True)
+            for state, record in self.claims.values()
+            if state == "COMPLETED" and record is not None
+        ]
+
+    def store(self, record):
+        self.claims[record.source_document.sha256] = (
+            "COMPLETED",
+            record.model_copy(deep=True),
+        )
 
 
 def api_settings(tmp_path: Path) -> AppSettings:
@@ -266,6 +297,28 @@ async def test_document_file_rejects_unknown_or_invalid_id(tmp_path: Path) -> No
 
 
 @pytest.mark.anyio
+async def test_document_preview_is_rendered_as_png(tmp_path: Path) -> None:
+    settings = api_settings(tmp_path)
+    settings.input_dir.mkdir(parents=True)
+    pdf = settings.input_dir / "aviso.pdf"
+    with pymupdf.open() as document:
+        page = document.new_page()
+        page.insert_text((72, 72), "FinTrace preview")
+        document.save(pdf)
+    digest = hashlib.sha256(pdf.read_bytes()).hexdigest()
+
+    async with api_client(settings, StubPipeline()) as client:
+        response = await client.get(
+            f"/api/documents/sha256:{digest}/preview"
+        )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "image/png"
+    assert response.headers["cache-control"] == "private, no-store"
+    assert response.content.startswith(b"\x89PNG\r\n\x1a\n")
+
+
+@pytest.mark.anyio
 async def test_operator_can_force_document_reevaluation(tmp_path: Path) -> None:
     settings = api_settings(tmp_path)
     settings.input_dir.mkdir(parents=True)
@@ -311,6 +364,62 @@ async def test_reevaluation_rejects_document_already_processing(
 
     assert response.status_code == 409
     assert pipeline.received == []
+
+
+@pytest.mark.anyio
+async def test_operator_can_approve_document_after_review(tmp_path: Path) -> None:
+    settings = api_settings(tmp_path)
+    record = valid_document_record()
+    record.processing_status = ProcessingStatus.REVIEW_REQUIRED
+    record.review.required = True
+    record.review.reasons = [
+        RoutingReason(
+            code="MANUAL_CHECK_REQUIRED",
+            category=ExceptionCategory.REVIEW_EXCEPTION,
+            message="Operator confirmation is required.",
+        )
+    ]
+    record.exceptions = record.review.reasons.copy()
+    registry = MemoryDocumentRegistry()
+    registry.store(record)
+    pipeline = StubPipeline(registry)
+
+    async with api_client(settings, pipeline) as client:
+        response = await client.post(
+            f"/api/documents/{record.document_id}/approve"
+        )
+
+    assert response.status_code == 200
+    approved = response.json()["records"][0]
+    assert approved["processing_status"] == "ACCEPTED"
+    assert approved["review"]["required"] is False
+    assert approved["manual_review"]["approved"] is True
+    assert approved["manual_review"]["previous_status"] == "REVIEW_REQUIRED"
+    assert approved["manual_review"]["acknowledged_reasons"][0]["code"] == (
+        "MANUAL_CHECK_REQUIRED"
+    )
+    assert response.json()["report"]["summary"]["human_review"] == 0
+    assert response.json()["report"]["summary"]["accepted"] == 1
+    assert response.json()["report"]["documents"][0]["manually_approved"] is True
+    assert len(pipeline.persisted_records) == 1
+    assert len(pipeline.persisted_reports) == 1
+
+
+@pytest.mark.anyio
+async def test_manual_approval_rejects_document_outside_review(tmp_path: Path) -> None:
+    settings = api_settings(tmp_path)
+    record = valid_document_record()
+    registry = MemoryDocumentRegistry()
+    registry.store(record)
+    pipeline = StubPipeline(registry)
+
+    async with api_client(settings, pipeline) as client:
+        response = await client.post(
+            f"/api/documents/{record.document_id}/approve"
+        )
+
+    assert response.status_code == 409
+    assert pipeline.persisted_records == []
 
 
 @pytest.mark.anyio

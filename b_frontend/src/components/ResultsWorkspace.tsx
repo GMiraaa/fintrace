@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { getDocumentFileUrl } from '../api'
+import { getDocumentFileUrl, getDocumentPreviewUrl } from '../api'
 import { STATUS_LABELS } from '../constants'
 import { summarizeRoutingReasons } from '../routingReasons'
 import { DocumentThumbnail } from './DocumentThumbnail'
@@ -9,12 +9,14 @@ import { RecordDetail } from './RecordDetail'
 import type { BatchUploadResponse, ExceptionReportDocument, ProcessingStatus } from '../types'
 
 interface ResultsWorkspaceProps {
+  approvingDocumentId: string | null
+  onApprove: (documentId: string) => void
   onReevaluate: (documentId: string) => void
   reevaluatingDocumentId: string | null
   result: BatchUploadResponse
 }
 
-export function ResultsWorkspace({ onReevaluate, reevaluatingDocumentId, result }: ResultsWorkspaceProps) {
+export function ResultsWorkspace({ approvingDocumentId, onApprove, onReevaluate, reevaluatingDocumentId, result }: ResultsWorkspaceProps) {
   const [activeIndex, setActiveIndex] = useState(0)
   const resultGridRef = useRef<HTMLDivElement>(null)
   const summary = result.report.summary
@@ -121,7 +123,7 @@ export function ResultsWorkspace({ onReevaluate, reevaluatingDocumentId, result 
               type="button"
             >
               <span className="document-number">{index + 1}</span>
-              <span><strong>{document.file_name}</strong><small>{STATUS_LABELS[document.processing_status]}</small></span>
+              <span><strong>{document.file_name}</strong><small>{document.manually_approved ? 'Aprovado após revisão' : STATUS_LABELS[document.processing_status]}</small></span>
               <StatusDot status={document.processing_status} />
             </button>
           ))}
@@ -129,6 +131,8 @@ export function ResultsWorkspace({ onReevaluate, reevaluatingDocumentId, result 
         <div className="record-detail">
           {activeRecord ? (
             <RecordDetail
+              approving={approvingDocumentId === activeRecord.document_id}
+              onApprove={onApprove}
               onReevaluate={onReevaluate}
               record={activeRecord}
               reevaluating={reevaluatingDocumentId === activeRecord.document_id}
@@ -142,9 +146,10 @@ export function ResultsWorkspace({ onReevaluate, reevaluatingDocumentId, result 
 
 function FailureDetail({ document }: { document?: ExceptionReportDocument }) {
   const documentUrl = document?.document_id ? getDocumentFileUrl(document.document_id) : null
+  const previewUrl = document?.document_id ? getDocumentPreviewUrl(document.document_id) : null
   return (
     <div className="failure-detail">
-      {documentUrl && document && <DocumentThumbnail fileName={document.file_name} url={documentUrl} />}
+      {documentUrl && previewUrl && document && <DocumentThumbnail fileName={document.file_name} previewUrl={previewUrl} url={documentUrl} />}
       <Icon name="alert" size={28} />
       <h3>O documento não foi processado</h3>
       <p>{document?.exceptions?.length ? summarizeRoutingReasons(document.exceptions)[0] : 'Consulte o histórico técnico para identificar a causa.'}</p>

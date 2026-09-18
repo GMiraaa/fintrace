@@ -1,0 +1,116 @@
+{
+  "schema_version": "2.0",
+  "summary": {
+    "processed": 8,
+    "accepted": 3,
+    "human_review": 4,
+    "pending_information": 1,
+    "failed": 0
+  },
+  "documents": [
+    {
+      "document_id": "sha256:e49afdf81d2a1e4a74985e78fa0ea3639633cfa19f5dba633a2b545d115153cb",
+      "file_name": "01_energetica_vale_tiete_dividendo.pdf",
+      "processing_status": "ACCEPTED",
+      "confidence_score": 94,
+      "manually_approved": false,
+      "exceptions": []
+    },
+    {
+      "document_id": "sha256:64e0787afd32c0d99e5407a5fbc6f5048245ba70826563d0b14205074b970668",
+      "file_name": "02_banco_meridional_jcp.pdf",
+      "processing_status": "ACCEPTED",
+      "confidence_score": 94,
+      "manually_approved": false,
+      "exceptions": []
+    },
+    {
+      "document_id": "sha256:a21a294ac3ededbb6fdef195be0edb0572069544e0b73f6fc1918fa77d6b0e85",
+      "file_name": "03_siderurgica_paranaense_proventos.pdf",
+      "processing_status": "REVIEW_REQUIRED",
+      "confidence_score": 86,
+      "manually_approved": false,
+      "exceptions": [
+        {
+          "code": "TITLE_BODY_CLASSIFICATION_CONFLICT",
+          "category": "REVIEW_EXCEPTION",
+          "message": "Material classification evidence is contradictory."
+        },
+        {
+          "code": "CRITICAL_FIELD_CONFIDENCE_BELOW_THRESHOLD",
+          "category": "REVIEW_EXCEPTION",
+          "message": "Critical field confidence is below 75%: corporate_action.event_type (15%)."
+        }
+      ]
+    },
+    {
+      "document_id": "sha256:37f846a73cb5486b543bb1e580144c8d94eafee4aa7396424637c063a3bfbb83",
+      "file_name": "04_rede_varejo_jcp_sem_data.pdf",
+      "processing_status": "PENDING_INFORMATION",
+      "confidence_score": 94,
+      "manually_approved": false,
+      "exceptions": [
+        {
+          "code": "PAYMENT_DATE_NOT_DISCLOSED",
+          "category": "BUSINESS_EXCEPTION",
+          "message": "The issuer states that the payment date will be disclosed later."
+        }
+      ]
+    },
+    {
+      "document_id": "sha256:925b6eb09fbcaecf81d3c1d125e041edd1460fed23d6a67bf10f8a6b170e9567",
+      "file_name": "05_aurora_saneamento_dividendo_datas.pdf",
+      "processing_status": "REVIEW_REQUIRED",
+      "confidence_score": 78,
+      "manually_approved": false,
+      "exceptions": [
+        {
+          "code": "DATE_SEQUENCE_INCONSISTENT",
+          "category": "VALIDATION_EXCEPTION",
+          "message": "Payment date occurs before the record date."
+        },
+        {
+          "code": "CRITICAL_FIELD_CONFIDENCE_BELOW_THRESHOLD",
+          "category": "REVIEW_EXCEPTION",
+          "message": "Critical field confidence is below 75%: dates.record_date (15%)."
+        }
+      ]
+    },
+    {
+      "document_id": "sha256:147d83f038f6ca94495a5d5248f36a6feedee7ae9a5cebc011d40e1f14d68068",
+      "file_name": "06_petroquimica_litoral_grupamento.pdf",
+      "processing_status": "REVIEW_REQUIRED",
+      "confidence_score": 94,
+      "manually_approved": false,
+      "exceptions": [
+        {
+          "code": "CRITICAL_FIELD_CONFIDENCE_BELOW_THRESHOLD",
+          "category": "REVIEW_EXCEPTION",
+          "message": "Critical field confidence is below 75%: dates.ex_date (10%)."
+        }
+      ]
+    },
+    {
+      "document_id": "sha256:cf4af08dd23f507ae72b852d86827bbee6c3fe2d0e31f96e70bc74ea4238c45f",
+      "file_name": "07_telecom_norte_jcp_SCAN.pdf",
+      "processing_status": "ACCEPTED",
+      "confidence_score": 85,
+      "manually_approved": false,
+      "exceptions": []
+    },
+    {
+      "document_id": "sha256:a509637f4b258454309e1d21e81beca56701a78624b8a6a6f9a6b0ec9389b0e5",
+      "file_name": "08_construtora_horizonte_bonificacao.pdf",
+      "processing_status": "REVIEW_REQUIRED",
+      "confidence_score": 94,
+      "manually_approved": false,
+      "exceptions": [
+        {
+          "code": "REFERENCE_NOT_FOUND",
+          "category": "VALIDATION_EXCEPTION",
+          "message": "No golden record could be confirmed for the extracted security."
+        }
+      ]
+    }
+  ]
+}

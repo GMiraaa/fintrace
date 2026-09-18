@@ -46,8 +46,8 @@ flowchart TB
     EXT --> BASIC1 --> BASIC2 --> CHECKS
     CHECKS -. campo material pendente .-> STRONG
     CHECKS -. campos materiais resolvidos .-> VAL
-    BASIC2 -. provider indisponível .-> STRONG
-    STRONG -. nenhuma resposta estruturada válida .-> PY
+    EXT -. sem chave configurada .-> PY
+    EXT -. nenhuma resposta de IA válida .-> PY
     BASIC1 --> TOOLBOX
     BASIC2 --> TOOLBOX
     STRONG --> TOOLBOX
@@ -119,6 +119,10 @@ flowchart TB
 - `POST /api/documents/{document_id}/reevaluate` é a exceção explícita ao cache.
   Ele incrementa a revisão sem alterar a identidade de conteúdo e recusa uma
   segunda reavaliação enquanto a primeira estiver ativa.
+- `POST /api/documents/{document_id}/approve` registra a conclusão humana de um
+  documento em `REVIEW_REQUIRED`. A decisão não apaga alertas nem recalcula a
+  extração: status anterior, instante e motivos reconhecidos permanecem em
+  `manual_review`, e uma nova versão é persistida no histórico.
 - O endpoint de processamento é síncrono. Uma fila só será
   introduzida mediante requisito de volume, latência ou recuperação de jobs.
 - A reserva por hash pertence à fronteira HTTP. A CLI continua sendo uma
@@ -131,9 +135,11 @@ flowchart TB
   usados para localizar arquivos. A busca é restrita a PDFs do diretório de
   entrada, e a resposta é `inline`, privada e sem cache.
 - O frontend carrega uma miniatura da primeira página do documento selecionado.
-  O visualizador completo depende de ação do operador. A auditoria primária
-  permanece no JSON estruturado; o documento é apoio para investigação, não
-  uma dependência para conferir cada campo.
+  A miniatura é um PNG renderizado pelo backend, evitando barras e controles
+  inconsistentes dos visualizadores PDF nativos. O visualizador completo depende
+  de ação do operador. A auditoria primária permanece no JSON estruturado; o
+  documento é apoio para investigação, não uma dependência para conferir cada
+  campo.
 
 ## Dependências e representação de dados
 

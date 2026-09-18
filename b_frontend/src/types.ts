@@ -181,6 +181,12 @@ export interface DocumentRecord {
   validations: ValidationResult[]
   review: { required: boolean; reasons: RoutingReason[] }
   follow_up: { required: boolean; reasons: RoutingReason[] }
+  manual_review: {
+    approved: boolean
+    approved_at: string | null
+    previous_status: ProcessingStatus | null
+    acknowledged_reasons: RoutingReason[]
+  }
   exceptions: RoutingReason[]
 }
 
@@ -189,6 +195,7 @@ export interface ExceptionReportDocument {
   file_name: string
   processing_status: ProcessingStatus
   confidence_score: number | null
+  manually_approved: boolean
   exceptions: RoutingReason[]
 }
 

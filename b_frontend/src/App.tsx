@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { getHealth, reevaluateDocument, uploadDocuments } from './api'
+import { approveDocument, getHealth, reevaluateDocument, uploadDocuments } from './api'
 import { ResultsWorkspace } from './components/ResultsWorkspace'
 import { Topbar } from './components/Topbar'
 import { TracePreview } from './components/TracePreview'
@@ -14,11 +14,11 @@ import type {
 
 type AppState = 'idle' | 'processing' | 'done' | 'error'
 
-const DEFAULT_FONT_SCALE = 108
-const MIN_FONT_SCALE = 92
-const MAX_FONT_SCALE = 124
+const DEFAULT_FONT_SCALE = 116
+const MIN_FONT_SCALE = 100
+const MAX_FONT_SCALE = 132
 const FONT_SCALE_STEP = 8
-const FONT_SCALE_STORAGE_KEY = 'fintrace-font-scale'
+const FONT_SCALE_STORAGE_KEY = 'fintrace-font-scale-v2'
 
 function initialFontScale() {
   try {
@@ -38,6 +38,7 @@ function App() {
   const [error, setError] = useState('')
   const [result, setResult] = useState<BatchUploadResponse | null>(null)
   const [reevaluatingDocumentId, setReevaluatingDocumentId] = useState<string | null>(null)
+  const [approvingDocumentId, setApprovingDocumentId] = useState<string | null>(null)
   const [fontScale, setFontScale] = useState(initialFontScale)
 
   useEffect(() => {
@@ -111,6 +112,19 @@ function App() {
     }
   }
 
+  async function approve(documentId: string) {
+    setApprovingDocumentId(documentId)
+    setError('')
+    try {
+      const response = await approveDocument(documentId)
+      setResult((current) => mergeBatchResults(current, response))
+    } catch (requestError: unknown) {
+      setError(requestError instanceof Error ? requestError.message : 'Não foi possível aprovar o documento.')
+    } finally {
+      setApprovingDocumentId(null)
+    }
+  }
+
   return (
     <div className="app-shell">
       <Topbar
@@ -127,7 +141,7 @@ function App() {
           <UploadPanel error={error} files={files} onAddFiles={addFiles} onProcess={processFiles} onRemoveFile={removeFile} state={state} />
           <TracePreview state={state} hasResult={Boolean(result)} />
         </section>
-        {result ? <ResultsWorkspace onReevaluate={reevaluate} reevaluatingDocumentId={reevaluatingDocumentId} result={result} /> : (
+        {result ? <ResultsWorkspace approvingDocumentId={approvingDocumentId} onApprove={approve} onReevaluate={reevaluate} reevaluatingDocumentId={reevaluatingDocumentId} result={result} /> : (
           <section className="empty-guidance" aria-label="Como o FinTrace trabalha">
             <span>Leitura do documento</span>
             <span>Conferência automática</span>

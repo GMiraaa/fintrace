@@ -4,6 +4,8 @@ import hashlib
 import re
 from pathlib import Path
 
+import pymupdf
+
 DOCUMENT_ID_PATTERN = re.compile(r"^sha256:([0-9a-f]{64})$")
 
 
@@ -45,3 +47,23 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: file.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def render_first_page_preview(
+    pdf_path: str | Path,
+    *,
+    maximum_width: int = 480,
+) -> bytes:
+    """Renderiza uma miniatura PNG sem depender do visualizador PDF do browser."""
+    path = Path(pdf_path)
+    with pymupdf.open(path) as document:
+        if document.page_count == 0:
+            raise ValueError("PDF contains no pages")
+        page = document[0]
+        scale = min(maximum_width / max(page.rect.width, 1), 1.5)
+        pixmap = page.get_pixmap(
+            matrix=pymupdf.Matrix(scale, scale),
+            alpha=False,
+            colorspace=pymupdf.csRGB,
+        )
+        return pixmap.tobytes("png")

@@ -186,6 +186,18 @@ class ProcessingPipeline:
         )
         return BatchProcessingResult(records=records, report=report)
 
+    def persist_record(self, record: DocumentRecord) -> None:
+        """Persiste uma nova versão de um registro alterado pelo operador."""
+        self._write_record(record)
+
+    def persist_report(self, report: ExceptionReport) -> None:
+        """Atualiza o relatório consolidado após uma decisão operacional."""
+        self._write_json(
+            "exception_report.json",
+            report.model_dump(mode="json"),
+            artifact_type="EXCEPTION_REPORT",
+        )
+
     def _apply_reference(self, record: DocumentRecord) -> None:
         reference = record.reference_validation.reference_record
         conflict_fields = {

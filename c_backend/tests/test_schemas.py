@@ -98,6 +98,7 @@ def test_minimal_document_record_is_valid() -> None:
     assert record.schema_version == "2.0"
     assert record.corporate_action.event_type.value is None
     assert record.corporate_action.event_type.status is FieldStatus.UNKNOWN
+    assert record.manual_review.approved is False
 
 
 def test_event_type_enum_rejects_uncontrolled_value() -> None:

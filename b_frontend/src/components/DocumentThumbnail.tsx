@@ -3,16 +3,15 @@ import { Icon } from './Icon'
 interface DocumentThumbnailProps {
   fileName: string
   onOpen?: () => void
+  previewUrl: string
   url: string
 }
 
-export function DocumentThumbnail({ fileName, onOpen, url }: DocumentThumbnailProps) {
-  const previewUrl = `${url}#page=1&toolbar=0&navpanes=0&scrollbar=0&view=FitH`
-
+export function DocumentThumbnail({ fileName, onOpen, previewUrl, url }: DocumentThumbnailProps) {
   return (
     <aside className="document-thumbnail" aria-label="Miniatura do documento original">
       <div className="document-thumbnail__page">
-        <iframe aria-hidden="true" src={previewUrl} tabIndex={-1} title="" />
+        <img alt="" aria-hidden="true" src={previewUrl} />
         {onOpen ? (
           <button onClick={onOpen} type="button"><Icon name="eye" size={16} />Ampliar documento</button>
         ) : (

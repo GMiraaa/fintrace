@@ -258,6 +258,12 @@ o JSON persistido.
     "required": false,
     "reasons": []
   },
+  "manual_review": {
+    "approved": false,
+    "approved_at": null,
+    "previous_status": null,
+    "acknowledged_reasons": []
+  },
   "exceptions": []
 }
 ```
@@ -371,8 +377,8 @@ expõe divergências sem substituir silenciosamente o valor do documento.
 
 ## Projeção operacional no frontend
 
-O frontend não cria nem modifica resultados de domínio. Ele projeta este
-contrato para auditoria da seguinte forma:
+O frontend não recalcula resultados de domínio. Ele projeta este contrato para
+auditoria e pode registrar uma aprovação humana por meio da API:
 
 | Necessidade do operador | Elementos do contrato apresentados |
 |---|---|
@@ -382,6 +388,7 @@ contrato para auditoria da seguinte forma:
 | Qual a cobertura geral | `document_confidence.score`, completude e campos ausentes |
 | Como foi validado | `validation`, `expected`, `observed` e `reference_validation` |
 | O que exige atuação | `processing_status`, `review`, `follow_up` e `exceptions` |
+| Qual decisão humana foi tomada | `manual_review`, horário e motivos reconhecidos |
 | Como a cascata se comportou | `extraction_attempts` e `preliminary_checks` |
 
 O tipo do evento também é tratado como campo auditável, acompanhado por
@@ -392,6 +399,8 @@ O botão de visualização usa o `document_id` para consultar
 `GET /api/documents/{document_id}/file`. Essa rota é complementar ao contrato:
 o JSON permanece suficiente para a auditoria cotidiana, enquanto o PDF fica
 disponível para investigação ou conferência visual.
+`GET /api/documents/{document_id}/preview` renderiza somente a primeira página
+como PNG para a miniatura, sem incorporar o visualizador PDF nativo na tela.
 
 Cada JSON escrito no filesystem também é inserido integralmente em JSONB na
 tabela `processing_artifacts`. As colunas `artifact_type`, `file_name`,
@@ -405,10 +414,11 @@ chave primária, `document_id` também é único e os campos
 reavaliação. `latest_payload` facilita reutilização, mas não substitui as linhas
 imutáveis de `processing_artifacts`.
 
-## Contrato HTTP de upload e reavaliação
+## Contrato HTTP de upload, reavaliação e aprovação
 
 `POST /api/documents/upload` e
-`POST /api/documents/{document_id}/reevaluate` retornam:
+`POST /api/documents/{document_id}/reevaluate` e
+`POST /api/documents/{document_id}/approve` retornam:
 
 ```json
 {
@@ -452,6 +462,12 @@ PostgreSQL, portanto dois uploads simultâneos do mesmo conteúdo não iniciam d
 chamadas à IA. Uma reavaliação preserva o hash, incrementa `revision` e cria
 novo artefato histórico; se o documento estiver em `PROCESSING`, a API retorna
 `409`.
+
+A aprovação manual aceita exclusivamente um registro em `REVIEW_REQUIRED`.
+Ela altera o encaminhamento para `ACCEPTED`, marca `review.required` como falso
+e preserva em `manual_review` o status anterior, o instante UTC e uma cópia dos
+motivos reconhecidos. Os motivos originais continuam auditáveis; a operação não
+recalcula campos, confiança ou validações.
 
 ## Códigos de validação
 
@@ -562,6 +578,7 @@ O relatório usa o mesmo `schema_version` e contém:
       "file_name": "notice.pdf",
       "processing_status": "ACCEPTED",
       "confidence_score": 92,
+      "manually_approved": false,
       "exceptions": []
     }
   ]

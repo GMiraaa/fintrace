@@ -34,6 +34,10 @@ class DocumentRegistry(Protocol):
         force: bool = False,
     ) -> DocumentClaim: ...
 
+    def get_document(self, document_id: str) -> DocumentRecord | None: ...
+
+    def list_documents(self) -> list[DocumentRecord]: ...
+
 
 class PostgresArtifactRepository:
     """Persiste cada JSON gerado como um artefato imutável em JSONB."""
@@ -204,6 +208,34 @@ class PostgresArtifactRepository:
                 if retried is not None:
                     return DocumentClaim(acquired=True, state="PROCESSING")
             return DocumentClaim(acquired=False, state=state, record=record)
+
+    def get_document(self, document_id: str) -> DocumentRecord | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT latest_payload
+                FROM documents
+                WHERE document_id = %s
+                  AND processing_state = 'COMPLETED'
+                """,
+                (document_id,),
+            ).fetchone()
+        if row is None or row[0] is None:
+            return None
+        return DocumentRecord.model_validate(row[0])
+
+    def list_documents(self) -> list[DocumentRecord]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT latest_payload
+                FROM documents
+                WHERE processing_state = 'COMPLETED'
+                  AND latest_payload IS NOT NULL
+                ORDER BY processed_at, document_id
+                """
+            ).fetchall()
+        return [DocumentRecord.model_validate(row[0]) for row in rows]
 
     def save_artifact(
         self,

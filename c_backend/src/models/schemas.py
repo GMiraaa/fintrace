@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Generic, TypeVar
 
@@ -207,6 +207,13 @@ class FollowUpDecision(StrictModel):
     reasons: list[RoutingReason] = Field(default_factory=list)
 
 
+class ManualReviewDecision(StrictModel):
+    approved: bool = False
+    approved_at: datetime | None = None
+    previous_status: ProcessingStatus | None = None
+    acknowledged_reasons: list[RoutingReason] = Field(default_factory=list)
+
+
 class DocumentConfidence(StrictModel):
     score: int = Field(default=0, ge=0, le=100)
     completion_percentage: int = Field(default=0, ge=0, le=100)
@@ -235,6 +242,9 @@ class DocumentRecord(StrictModel):
     validations: list[ValidationResult] = Field(default_factory=list)
     review: ReviewDecision = Field(default_factory=ReviewDecision)
     follow_up: FollowUpDecision = Field(default_factory=FollowUpDecision)
+    manual_review: ManualReviewDecision = Field(
+        default_factory=ManualReviewDecision
+    )
     exceptions: list[RoutingReason] = Field(default_factory=list)
 
 
@@ -251,6 +261,7 @@ class ExceptionReportDocument(StrictModel):
     file_name: str = Field(min_length=1)
     processing_status: ProcessingStatus
     confidence_score: int | None = Field(default=None, ge=0, le=100)
+    manually_approved: bool = False
     exceptions: list[RoutingReason] = Field(default_factory=list)
 
 

@@ -1,0 +1,544 @@
+{
+  "schema_version": "2.0",
+  "document_id": "sha256:a509637f4b258454309e1d21e81beca56701a78624b8a6a6f9a6b0ec9389b0e5",
+  "source_document": {
+    "file_name": "08_construtora_horizonte_bonificacao.pdf",
+    "sha256": "a509637f4b258454309e1d21e81beca56701a78624b8a6a6f9a6b0ec9389b0e5",
+    "page_count": 1,
+    "extraction_methods": [
+      "NATIVE_TEXT"
+    ]
+  },
+  "processing_status": "REVIEW_REQUIRED",
+  "issuer": {
+    "name": {
+      "value": "CONSTRUTORA HORIZONTE S.A.",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "CONSTRUTORA HORIZONTE S.A.",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": []
+    },
+    "cnpj": {
+      "value": "09.888.999/0001-21",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "CNPJ/ME nº 09.888.999/0001-21",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": []
+    }
+  },
+  "security": {
+    "isin": {
+      "value": "BRCNHZACNOR5",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "CNHZ3 (ISIN BRCNHZACNOR5)",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": []
+    },
+    "ticker": {
+      "value": "CNHZ3",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "CNHZ3 (ISIN BRCNHZACNOR5)",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": []
+    },
+    "share_class": {
+      "value": null,
+      "status": "NOT_APPLICABLE",
+      "origin": "UNKNOWN",
+      "confidence": 100,
+      "agent_agreement": 100,
+      "sources": [],
+      "validation": []
+    },
+    "listing_segment": {
+      "value": null,
+      "status": "UNKNOWN",
+      "origin": "UNKNOWN",
+      "confidence": 0,
+      "agent_agreement": null,
+      "sources": [],
+      "validation": []
+    },
+    "asset_status": {
+      "value": null,
+      "status": "UNKNOWN",
+      "origin": "UNKNOWN",
+      "confidence": 0,
+      "agent_agreement": null,
+      "sources": [],
+      "validation": []
+    }
+  },
+  "corporate_action": {
+    "event_type": {
+      "value": "BONUS_SHARES",
+      "status": "EXTRACTED",
+      "origin": "DOCUMENT",
+      "confidence": 94,
+      "agent_agreement": 100,
+      "sources": [
+        {
+          "page": 1,
+          "evidence": "AVISO AOS ACIONISTAS — Bonificação em Ações",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      ],
+      "validation": [
+        {
+          "rule": "EVENT_CLASSIFICATION_SUPPORTED",
+          "status": "PASS",
+          "message": "No material classification conflict was reported.",
+          "expected": "BONUS_SHARES",
+          "observed": "BONUS_SHARES"
+        }
+      ]
+    },
+    "classification_evidence": [
+      {
+        "supports": "BONUS_SHARES",
+        "rationale": "Notice title and text explicitly describe stock bonus (bonificação em ações) via capitalization of reserves.",
+        "source": {
+          "page": 1,
+          "evidence": "A Construtora Horizonte S.A. comunica aos seus acionistas que a Assembleia Geral Extraordinária de 04 de junho de 2026 aprovou aumento do capital social mediante capitalização de reservas, com a consequente bonificação em ações aos acionistas.",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      },
+      {
+        "supports": "BONUS_SHARES",
+        "rationale": "The notice explicitly describes a capital increase through the capitalization of reserves resulting in a bonus share issuance.",
+        "source": {
+          "page": 1,
+          "evidence": "aumento do capital social mediante capitalização de reservas, com a consequente bonificação em ações aos acionistas.",
+          "extraction_method": "NATIVE_TEXT"
+        }
+      }
+    ],
+    "classification_conflicts": [],
+    "dates": {
+      "approval_date": {
+        "value": "2026-06-04",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "Assembleia Geral Extraordinária de 04 de junho de 2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "DATE_APPROVAL_AFTER_RECORD",
+            "status": "PASS",
+            "message": "Approval date is not after the record date.",
+            "expected": "approval_date <= record_date",
+            "observed": "2026-06-04 > 2026-06-18"
+          }
+        ]
+      },
+      "record_date": {
+        "value": "2026-06-18",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "ao final do dia 18 de junho de 2026 (“data com”)",
+            "extraction_method": "NATIVE_TEXT"
+          },
+          {
+            "page": 1,
+            "evidence": "final do dia 18 de junho de 2026 (“data com”)",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "DATE_APPROVAL_AFTER_RECORD",
+            "status": "PASS",
+            "message": "Approval date is not after the record date.",
+            "expected": "approval_date <= record_date",
+            "observed": "2026-06-04 > 2026-06-18"
+          },
+          {
+            "rule": "DATE_RECORD_NOT_BEFORE_EX",
+            "status": "PASS",
+            "message": "Record date occurs before the ex-date.",
+            "expected": "record_date < ex_date",
+            "observed": "2026-06-18 / 2026-06-19"
+          }
+        ]
+      },
+      "ex_date": {
+        "value": "2026-06-19",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "As ações passarão a ser negociadas “ex-bonificação” a partir de 19 de junho de 2026.",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "DATE_RECORD_NOT_BEFORE_EX",
+            "status": "PASS",
+            "message": "Record date occurs before the ex-date.",
+            "expected": "record_date < ex_date",
+            "observed": "2026-06-18 / 2026-06-19"
+          }
+        ]
+      },
+      "payment_date": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      },
+      "credit_date": {
+        "value": "2026-06-26",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "Crédito das ações bonificadas\n26/06/2026",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": []
+      },
+      "fraction_period_start": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      },
+      "fraction_period_end": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      }
+    },
+    "financials": {
+      "gross_amount_per_share": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      },
+      "net_amount_per_share": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      },
+      "tax_rate_percent": {
+        "value": null,
+        "status": "NOT_APPLICABLE",
+        "origin": "UNKNOWN",
+        "confidence": 100,
+        "agent_agreement": 100,
+        "sources": [],
+        "validation": []
+      },
+      "tax_treatment": {
+        "value": "NOT_APPLICABLE",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "O custo unitário atribuído às ações bonificadas, para fins fiscais, é de R$ 7,820000 por ação.",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": []
+      },
+      "currency": {
+        "value": "BRL",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "R$ 7,820000 por ação",
+            "extraction_method": "NATIVE_TEXT"
+          },
+          {
+            "page": 1,
+            "evidence": "R$ 7,820000 por ação.",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": []
+      },
+      "ratio": {
+        "value": {
+          "kind": "NEW_PER_EXISTING",
+          "numerator": "1",
+          "denominator": "20",
+          "percentage": "5"
+        },
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "A bonificação será atribuída na proporção de 1 (uma) ação nova para cada 20 (vinte) ações de que forem titulares",
+            "extraction_method": "NATIVE_TEXT"
+          },
+          {
+            "page": 1,
+            "evidence": "1 (uma) ação nova para cada 20 (vinte) ações",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": [
+          {
+            "rule": "FIN_RATIO_VALID",
+            "status": "PASS",
+            "message": "Corporate action ratio is positive.",
+            "expected": "numerator > 0 and denominator > 0",
+            "observed": "1:20 (NEW_PER_EXISTING)"
+          }
+        ]
+      },
+      "attributed_cost_per_share": {
+        "value": "7.82",
+        "status": "EXTRACTED",
+        "origin": "DOCUMENT",
+        "confidence": 94,
+        "agent_agreement": 100,
+        "sources": [
+          {
+            "page": 1,
+            "evidence": "O custo unitário atribuído às ações bonificadas, para fins fiscais, é de R$ 7,820000 por ação.",
+            "extraction_method": "NATIVE_TEXT"
+          }
+        ],
+        "validation": []
+      }
+    }
+  },
+  "extraction_attempts": [
+    {
+      "strategy": "BASIC_LLM",
+      "outcome": "SUFFICIENT",
+      "pass_number": 1,
+      "model": "gemini-3.5-flash-lite",
+      "unresolved_fields": [],
+      "error": null
+    },
+    {
+      "strategy": "BASIC_LLM",
+      "outcome": "SUFFICIENT",
+      "pass_number": 2,
+      "model": "gemini-3.5-flash-lite",
+      "unresolved_fields": [],
+      "error": null
+    }
+  ],
+  "preliminary_checks": [
+    {
+      "code": "REQUIRED_FIELDS",
+      "passed": true,
+      "message": "Todos os campos materiais foram resolvidos."
+    },
+    {
+      "code": "AGENT_CONSENSUS",
+      "passed": true,
+      "message": "As duas extrações básicas concordam nos campos informados."
+    },
+    {
+      "code": "EVIDENCE_GROUNDING",
+      "passed": true,
+      "message": "Todas as evidências foram localizadas nas páginas citadas."
+    },
+    {
+      "code": "GOLDEN_VALIDATION",
+      "passed": false,
+      "message": "A identidade não foi confirmada ou diverge da base de referência."
+    },
+    {
+      "code": "DATE_COHERENCE",
+      "passed": true,
+      "message": "As relações temporais avaliáveis são coerentes."
+    },
+    {
+      "code": "FINANCIAL_COHERENCE",
+      "passed": true,
+      "message": "Os valores financeiros avaliáveis são coerentes."
+    },
+    {
+      "code": "CLASSIFICATION_CONSISTENCY",
+      "passed": true,
+      "message": "A classificação não apresenta contradições materiais."
+    },
+    {
+      "code": "OCR_QUALITY",
+      "passed": true,
+      "message": "As páginas lidas por OCR possuem conteúdo suficiente."
+    }
+  ],
+  "document_confidence": {
+    "score": 94,
+    "completion_percentage": 100,
+    "required_fields": [
+      "issuer.name",
+      "security.isin",
+      "security.ticker",
+      "corporate_action.event_type",
+      "corporate_action.dates.approval_date",
+      "corporate_action.dates.record_date",
+      "corporate_action.dates.ex_date",
+      "corporate_action.financials.ratio"
+    ],
+    "resolved_fields": [
+      "issuer.name",
+      "security.isin",
+      "security.ticker",
+      "corporate_action.event_type",
+      "corporate_action.dates.approval_date",
+      "corporate_action.dates.record_date",
+      "corporate_action.dates.ex_date",
+      "corporate_action.financials.ratio"
+    ],
+    "missing_fields": [],
+    "rationale": "8 de 8 campos materiais foram resolvidos. O score é a média dos percentuais de confiança dos campos materiais; campos ausentes contribuem com zero."
+  },
+  "reference_validation": {
+    "exact_match": false,
+    "matched_by": [],
+    "reference_record": null,
+    "conflicts": [],
+    "possible_matches": []
+  },
+  "validations": [
+    {
+      "rule": "REF_NO_MATCH",
+      "status": "FAIL",
+      "message": "No reference record could be confirmed.",
+      "expected": null,
+      "observed": null
+    },
+    {
+      "rule": "DATE_APPROVAL_AFTER_RECORD",
+      "status": "PASS",
+      "message": "Approval date is not after the record date.",
+      "expected": "approval_date <= record_date",
+      "observed": "2026-06-04 > 2026-06-18"
+    },
+    {
+      "rule": "DATE_RECORD_NOT_BEFORE_EX",
+      "status": "PASS",
+      "message": "Record date occurs before the ex-date.",
+      "expected": "record_date < ex_date",
+      "observed": "2026-06-18 / 2026-06-19"
+    },
+    {
+      "rule": "FIN_RATIO_VALID",
+      "status": "PASS",
+      "message": "Corporate action ratio is positive.",
+      "expected": "numerator > 0 and denominator > 0",
+      "observed": "1:20 (NEW_PER_EXISTING)"
+    },
+    {
+      "rule": "EVENT_CLASSIFICATION_SUPPORTED",
+      "status": "PASS",
+      "message": "No material classification conflict was reported.",
+      "expected": "BONUS_SHARES",
+      "observed": "BONUS_SHARES"
+    }
+  ],
+  "review": {
+    "required": true,
+    "reasons": [
+      {
+        "code": "REFERENCE_NOT_FOUND",
+        "category": "VALIDATION_EXCEPTION",
+        "message": "No golden record could be confirmed for the extracted security."
+      }
+    ]
+  },
+  "follow_up": {
+    "required": false,
+    "reasons": []
+  },
+  "manual_review": {
+    "approved": false,
+    "approved_at": null,
+    "previous_status": null,
+    "acknowledged_reasons": []
+  },
+  "exceptions": [
+    {
+      "code": "REFERENCE_NOT_FOUND",
+      "category": "VALIDATION_EXCEPTION",
+      "message": "No golden record could be confirmed for the extracted security."
+    }
+  ]
+}

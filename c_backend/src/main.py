@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
 from urllib.parse import quote
 
+import pymupdf
 from fastapi import FastAPI, File, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
@@ -14,11 +16,13 @@ from src.api.documents import (
     DOCUMENT_ID_PATTERN,
     find_pdf_by_document_id,
     find_pdf_by_sha256,
+    render_first_page_preview,
 )
 from src.api.schemas import BatchUploadResponse, HealthResponse, UploadResult
 from src.api.uploads import StoredUpload, store_pdf_upload
 from src.config import AppSettings
 from src.logging_config import configure_logging
+from src.models.enums import ProcessingStatus
 from src.persistence import DocumentRegistry
 from src.pipeline.processor import BatchProcessingResult, ProcessingPipeline
 from src.routing.report import build_exception_report
@@ -214,6 +218,84 @@ def create_app(
                     message="Documento reavaliado e nova versão adicionada ao histórico.",
                 )
             ],
+        )
+
+    @application.post(
+        "/api/documents/{document_id}/approve",
+        response_model=BatchUploadResponse,
+    )
+    async def approve_document(document_id: str) -> BatchUploadResponse:
+        if DOCUMENT_ID_PATTERN.fullmatch(document_id) is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document not found.",
+            )
+
+        pipeline = get_pipeline()
+        repository = pipeline.artifact_repository
+        get_document = getattr(repository, "get_document", None)
+        list_documents = getattr(repository, "list_documents", None)
+        if not callable(get_document) or not callable(list_documents):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="A aprovação manual requer persistência configurada.",
+            )
+
+        record = get_document(document_id)
+        if record is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document not found.",
+            )
+        if record.processing_status is not ProcessingStatus.REVIEW_REQUIRED:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Somente documentos em revisão podem ser aprovados manualmente.",
+            )
+
+        record.manual_review.approved = True
+        record.manual_review.approved_at = datetime.now(timezone.utc)
+        record.manual_review.previous_status = record.processing_status
+        record.manual_review.acknowledged_reasons = [
+            reason.model_copy(deep=True) for reason in record.review.reasons
+        ]
+        record.review.required = False
+        record.processing_status = ProcessingStatus.ACCEPTED
+        pipeline.persist_record(record)
+
+        report = build_exception_report(list_documents())
+        pipeline.persist_report(report)
+        return BatchUploadResponse(
+            records=[record],
+            report=report,
+            uploads=[],
+        )
+
+    @application.get(
+        "/api/documents/{document_id}/preview",
+        response_class=Response,
+    )
+    async def preview_document(document_id: str) -> Response:
+        path = find_pdf_by_document_id(app_settings.input_dir, document_id)
+        if path is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document not found.",
+            )
+        try:
+            preview = render_first_page_preview(path)
+        except (pymupdf.FileDataError, RuntimeError, ValueError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Document preview could not be generated.",
+            ) from exc
+        return Response(
+            content=preview,
+            media_type="image/png",
+            headers={
+                "Cache-Control": "private, no-store",
+                "X-Content-Type-Options": "nosniff",
+            },
         )
 
     @application.get(

@@ -34,6 +34,7 @@ def build_exception_report(
                 file_name=record.source_document.file_name,
                 processing_status=record.processing_status,
                 confidence_score=record.document_confidence.score,
+                manually_approved=record.manual_review.approved,
                 exceptions=record.exceptions,
             )
             for record in record_list

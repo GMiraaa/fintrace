@@ -43,6 +43,9 @@ O fluxo da interface acompanha a rotina de um operador de Asset Servicing:
    encaminhado para atuação humana.
 5. **Reavalie quando necessário.** Uma nova execução preserva o identificador e
    adiciona uma revisão ao histórico.
+6. **Conclua a revisão humana.** Registros encaminhados para revisão podem ser
+   aprovados pelo operador; os alertas reconhecidos e o horário permanecem no
+   artefato para auditoria.
 
 Documentos analisados permanecem disponíveis durante a sessão, mesmo depois de
 novos uploads. Se o mesmo conteúdo for enviado com outro nome, o FinTrace
@@ -62,6 +65,56 @@ agora quanto o nome da primeira versão salva.
 | Auditoria | Evidência por página, método de leitura, tentativas dos agentes e JSON para download |
 | Controle de duplicidade | Identidade por SHA-256, reserva concorrente e reutilização de resultado |
 | Histórico | Artefatos imutáveis em PostgreSQL/JSONB e saídas inspecionáveis no filesystem |
+
+## Produto em operação
+
+### 1. Envio e explicação do fluxo
+
+![Tela inicial com a área de upload e as quatro etapas da análise](f_docs/assets/screenshots/01-upload-e-fluxo.png)
+
+A entrada aceita um ou vários PDFs e apresenta, antes do processamento, as
+etapas que transformam o aviso em uma decisão operacional. O cabeçalho também
+expõe a disponibilidade da integração com IA.
+
+### 2. Resumo operacional do lote
+
+![Resumo do lote com documentos aceitos, em revisão e aguardando informação](f_docs/assets/screenshots/02-resumo-operacional.png)
+
+O painel consolida o lote por resultado e coloca primeiro os documentos que
+exigem atuação. Cada item apresenta um motivo curto e permite abrir diretamente
+o registro, enquanto o relatório completo pode ser baixado em JSON.
+
+### 3. Visão geral do documento
+
+![Detalhe de um documento aceito com confiança, miniatura e ações](f_docs/assets/screenshots/03-detalhe-documento.png)
+
+A tela de detalhe mantém a fila do lote ao lado do documento selecionado. O
+operador encontra a decisão, a confiança consolidada, a completude, o método de
+leitura, uma miniatura do PDF e as ações de visualização, download e reavaliação.
+
+### 4. Dados estruturados e confiança
+
+![Campos extraídos organizados por assunto e acompanhados de confiança](f_docs/assets/screenshots/04-dados-extraidos.png)
+
+Os campos são agrupados por assunto e exibem valor, confiança e situação. Um
+guia explica as faixas do score antes da conferência, deixando claro quando um
+campo merece atenção ou revisão humana.
+
+### 5. Evidências e regras por campo
+
+![Detalhe expandido com trechos do documento e regras relacionadas](f_docs/assets/screenshots/05-evidencias-e-validacoes.png)
+
+Ao expandir um campo, o operador vê a concordância entre passagens, a origem do
+valor, os trechos literais com página e método de leitura, além das regras que
+aprovaram, advertiram ou reprovaram o resultado.
+
+### 6. Histórico técnico da análise
+
+![Histórico das passagens dos agentes e dos checks preliminares](f_docs/assets/screenshots/06-historico-da-analise.png)
+
+O histórico separa as tentativas de extração dos checks executados antes de uma
+eventual escalada. Essa visão permite investigar falhas do provider, divergências
+entre passagens e as validações que sustentaram a decisão final.
 
 ## Comece em poucos minutos
 
@@ -120,7 +173,8 @@ flowchart TD
     I -- Sim --> J[Modelo forte com tools controladas]
     I -- Não --> K[Registro estruturado]
     J --> K
-    G -. nenhuma resposta válida .-> L[Contingência Python]
+    J -. nenhuma resposta de IA válida .-> L[Contingência Python]
+    G -. sem chave configurada .-> L
     L --> K
     K --> M[Golden records e regras determinísticas]
     M --> N[Confiança e roteamento]
@@ -173,9 +227,11 @@ recebe três funções de leitura vinculadas somente ao PDF atual:
 - `inspect_pdf_words` — palavras e coordenadas para relações de layout.
 
 A consulta de referência é obrigatória; as tools de PDF devem ser usadas apenas
-quando o texto normalizado não permitir a verificação. Cada passagem aceita no
-máximo cinco chamadas remotas automáticas. O agente não recebe shell, caminho
-arbitrário, filesystem genérico ou execução de código.
+quando o texto normalizado não permitir a verificação. A etapa obrigatória tem
+AFC desabilitado e é executada manualmente pelo backend. Na extração do modelo
+forte, o AFC das tools opcionais de PDF aceita no máximo cinco chamadas remotas.
+O agente não recebe shell, caminho arbitrário, filesystem genérico ou execução
+de código.
 
 ### Leitura de PDFs e OCR
 
@@ -251,7 +307,9 @@ Na interface, o operador pode:
 - consultar as passagens dos agentes e os checks aplicados;
 - abrir o PDF original sem sair do produto;
 - baixar o JSON do documento e o relatório consolidado;
-- reavaliar deliberadamente um registro.
+- reavaliar deliberadamente um registro;
+- aprovar um documento depois da conferência humana, preservando os motivos que
+  impediram o aceite automático.
 
 ## Arquitetura
 
@@ -326,7 +384,9 @@ fintrace/
 ├── d_skills/corporate_actions/   # Conhecimento de Asset Servicing
 ├── .skills/b_backend_skills/     # Orientações de extração de PDF
 ├── e_scripts/                    # Ciclo de vida Docker
-├── f_docs/b_architecture/        # Contratos e decisões
+├── f_docs/
+│   ├── assets/screenshots/       # Capturas usadas na documentação
+│   └── b_architecture/           # Contratos e decisões
 └── docker-compose.yml
 ```
 
@@ -386,10 +446,13 @@ arquivo é mantido para preservar a visualização do documento.
 
 ```text
 GET /api/documents/{document_id}/file
+GET /api/documents/{document_id}/preview
 ```
 
 O endpoint aceita apenas identificadores `sha256:<hash>`, localiza o PDF pelo
-conteúdo e o entrega inline sem aceitar caminhos fornecidos pelo cliente.
+conteúdo e o entrega inline sem aceitar caminhos fornecidos pelo cliente. A
+rota `preview` renderiza a primeira página como PNG, evitando controles e barras
+do visualizador PDF nativo na miniatura.
 
 ### Reavaliação
 
@@ -399,6 +462,18 @@ POST /api/documents/{document_id}/reevaluate
 
 A reavaliação mantém o SHA-256, incrementa a revisão e gera um novo artefato. Se
 o documento já estiver em processamento, a API responde `409`.
+
+### Aprovação após revisão
+
+```text
+POST /api/documents/{document_id}/approve
+```
+
+A operação aceita somente registros em `REVIEW_REQUIRED` e requer a persistência
+PostgreSQL configurada. O registro passa para `ACCEPTED`, mas preserva em
+`manual_review` o status anterior, o horário e os motivos reconhecidos pelo
+operador. Uma nova versão é adicionada ao histórico JSONB, o JSON do documento e
+o relatório consolidado são atualizados.
 
 ## Entradas, saídas e persistência
 
@@ -483,34 +558,34 @@ precisam estar presentes para executar a suíte completa.
 
 ## Decisões e trade-offs
 
-- **Cascata explícita em vez de agentes autônomos.** A ordem é previsível,
-  testável e auditável. Modelos não criam agentes nem controlam o pipeline.
-- **Modelo forte somente para campo material pendente.** Uma validação de
-  negócio não resolvida não justifica, sozinha, uma chamada mais cara que não
-  pode alterar a regra determinística.
-- **Tools mínimas e vinculadas ao documento.** Há menos flexibilidade, mas uma
-  superfície menor para acesso indevido e evidência fora do escopo.
-- **Sem vector database.** Cada aviso é processado individualmente e o corpus
-  atual não exige recuperação semântica.
-- **Filesystem e PostgreSQL em paralelo.** Arquivos simplificam inspeção e
-  entrega; JSONB fornece histórico e consultas. O custo é manter dois meios de
-  persistência consistentes.
-- **Processamento síncrono no MVP.** Evita uma infraestrutura de fila prematura.
-  A reserva por SHA-256 ainda impede trabalho duplicado entre requisições.
-- **Deduplicação exata por conteúdo.** Nomes diferentes não burlam o cache, mas
-  qualquer alteração de byte cria outra identidade. Deduplicação perceptual
-  poderia unir documentos financeiros distintos e não foi adotada.
-- **Sem LangChain.** O SDK do provider e a orquestração direta mantêm o fluxo e
-  os prompts visíveis.
-- **Confiança não probabilística.** O score é uma política explícita baseada em
-  evidência, método, consenso e regras; não deve ser lido como probabilidade
-  calibrada sem dataset rotulado.
-- **Sem fuzzy matching como confirmação.** Similaridade pode auxiliar análise,
-  mas somente identificadores financeiros confirmam uma referência.
-- **CNPJ sintético com checksum não bloqueante.** A base do case contém números
-  fictícios que nem sempre possuem dígitos verificadores reais.
-- **Sem autenticação multiusuário.** O ambiente é local. Uma implantação externa
-  exigiria identidade, autorização, criptografia, retenção e segregação.
+As escolhas abaixo registram tanto o benefício buscado quanto o custo aceito no
+MVP. O detalhamento está em
+[Decisões arquiteturais](f_docs/b_architecture/architecture-decisions.md).
+
+| Decisão adotada | Por quê | Trade-off aceito |
+|---|---|---|
+| Cascata explícita com duas passagens básicas | Torna consenso, escalada e falhas observáveis e testáveis | Mais latência e custo que uma única chamada |
+| Modelo forte somente para campo material pendente | Reserva o modelo mais caro para lacunas que podem mudar a decisão | Divergências não materiais permanecem registradas sem nova adjudicação |
+| Function calling obrigatória para o golden record | Atende ao contrato do case de forma verificável, sem depender apenas do prompt | Acrescenta uma requisição dedicada por passagem de IA |
+| Validação determinística após a LLM | Mantém identidade, datas, cálculos e roteamento reproduzíveis | Parte da validação consultada pelo agente é repetida pelo backend |
+| Tools de PDF vinculadas ao documento atual | Reduz acesso indevido e impede caminhos arbitrários | O agente perde flexibilidade para navegar fora do contexto autorizado |
+| Filesystem e PostgreSQL/JSONB em paralelo | Entrega artefatos simples de inspecionar e preserva histórico consultável | Exige consistência entre dois meios de persistência |
+| SHA-256 como identidade | Oferece deduplicação exata e proteção concorrente simples | PDFs semanticamente iguais com bytes diferentes são reprocessados |
+| Processamento síncrono | Mantém implantação e depuração simples para o volume do case | Requisições longas ocupam a conexão e não há retomada de jobs |
+
+### O que decidimos não fazer
+
+| Decisão negativa | Motivo | Consequência aceita |
+|---|---|---|
+| Não usar arquitetura multiagente autônoma | O fluxo é curto e possui critérios objetivos de escalada | Menos flexibilidade dinâmica em troca de previsibilidade |
+| Não usar banco vetorial ou RAG | Cada aviso é independente e a referência cabe em um CSV pequeno | Não há recuperação semântica sobre um corpus amplo |
+| Não usar LangChain | O SDK do provider e funções Python cobrem o fluxo atual | Integrações futuras terão de respeitar a interface própria do agente |
+| Não usar fila assíncrona | O volume do MVP não justifica broker, workers e monitoramento adicionais | Escala horizontal e recuperação de jobs ficam como evolução |
+| Não usar hash perceptual | Similaridade pode unir documentos financeiros com diferenças sutis | Alterações de bytes geram nova identidade e novo processamento |
+| Não aceitar fuzzy matching como confirmação | Identidade financeira exige CNPJ, ISIN ou outro identificador consistente | Similaridade de emissor serve apenas para sugerir candidatos |
+| Não tratar confiança como probabilidade | Não existe dataset rotulado para calibração estatística | O percentual é uma política explicável, não chance de acerto |
+| Não bloquear CNPJ sintético por checksum | O lote fornecido usa identificadores fictícios | O CNPJ é normalizado e cruzado, mas o dígito verificador não bloqueia |
+| Não implementar autenticação multiusuário | O produto foi entregue para execução local | Uso externo exigiria identidade, autorização, criptografia e retenção |
 
 ## Cobertura do case
 
